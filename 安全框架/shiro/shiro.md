@@ -48,9 +48,11 @@ Shiro中有四大基石——身份验证，授权，会话管理和加密。
 
 ### 2.1 shiro下载
 
-要学习shiro，我们首先需求去shiro官网下载shiro，官网地址地址https://shiro.apache.org/，两个源码下载地址如下：
+要学习shiro，我们首先需求去shiro官网下载shiro，官网地址地址：https://shiro.apache.org/
 
-1.apache shiro2.github-shiro
+也可以从github上下载，下载地址：https://github.com/apache/shiro（选择需要的版本分支即可）
+
+![image-20211231131032088](shiro.images/image-20211231131032088.png)
 
 ### 2.2 创建演示工程
 
