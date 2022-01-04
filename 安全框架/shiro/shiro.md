@@ -58,7 +58,7 @@ Shiro中有四大基石——身份验证，授权，会话管理和加密。
 
 1.首先使用maven创建一个JavaSE工程 工程创建成功后在pom文件中添加如下依赖：
 
-```
+```xml
 <dependency>
  <groupId>org.apache.shiro</groupId>
  <artifactId>shiro-all</artifactId>
@@ -70,7 +70,7 @@ Shiro中有四大基石——身份验证，授权，会话管理和加密。
 
 参考quickstart项目中的shiro.ini文件，我们来配置一个用户，配置方式如下：首先在resources目录下创建一个shiro.ini文件，文件内容如下：
 
-```
+```ini
 [users]
 sang=123,admin
 [roles]
@@ -81,23 +81,23 @@ admin=*
 
 3.执行登录
 
-OK，做完上面几步之后，我们就可以来看看如何实现一次简单的登录操作了。这个登录操作我们依然是参考quickstart项目中的类来实现，首先我们要通过shiro.ini创建一个SecurityManager，再将这个SecurityManager设置为单例模式，如下：
+这个登录操作参考quickstart项目中的类来实现，首先要通过shiro.ini创建一个SecurityManager，再将这个SecurityManager设置为单例模式，如下：
 
-```
+```java
 Factory<org.apache.shiro.mgt.SecurityManager> factory = new IniSecurityManagerFactory("classpath:shiro.ini");
 org.apache.shiro.mgt.SecurityManager securityManager = factory.getInstance();
 SecurityUtils.setSecurityManager(securityManager);
 ```
 
-如此之后，我们就配置好了一个基本的Shiro环境，注意此时的用户和角色信息我们配置在shiro.ini这个配置文件中，接下来我们就可以获取一个Subject了，这个Subject就是我们当前的用户对象，获取方式如下：
+如此之后，就配置好了一个基本的Shiro环境，注意此时的用户和角色信息我们配置在shiro.ini这个配置文件中，接下来我们就可以获取一个Subject了，这个Subject就是我们当前的用户对象，获取方式如下：
 
-```
+```java
 Subject currentUser = SecurityUtils.getSubject();
 ```
 
 拿到这个用户对象之后，接下来我们可以获取一个session了，这个session和我们web中的HttpSession的操作基本上是一致的，不同的是，这个session不依赖任何容器，可以随时随地获取，获取和操作方式如下：
 
-```
+```java
 //获取session
 Session session = currentUser.getSession();
 //给session设置属性值
@@ -106,9 +106,9 @@ session.setAttribute("someKey", "aValue");
 String value = (String) session.getAttribute("someKey");
 ```
 
-说了这么多，我们的用户到现在还没有登录呢，Subject中有一个isAuthenticated方法用来判断当前用户是否已经登录，如果isAuthenticated方法返回一个false，则表示当前用户未登录，那我们就可以执行登陆，登录方式如下：
+Subject中有一个isAuthenticated方法用来判断当前用户是否已经登录，如果isAuthenticated方法返回一个false，则表示当前用户未登录，那我们就可以执行登陆，登录方式如下：
 
-```
+```java
 if (!currentUser.isAuthenticated()) {
     UsernamePasswordToken token = new UsernamePasswordToken("sang", "123");
     try {
@@ -130,13 +130,13 @@ if (!currentUser.isAuthenticated()) {
 
 当登录成功之后，我们可以通过如下方式获取当前登陆用户的用户名：
 
-```
+```java
 log.info("User [" + currentUser.getPrincipal() + "] logged in successfully.");
 ```
 
 我们也可以通过调用Subject中的hasRole和isPermitted方法来判断当前用户是否具备某种角色或者某种权限，如下：
 
-```
+```java
 if (currentUser.hasRole("admin")) {
     log.info("May the Schwartz be with you!");
 } else {
@@ -151,11 +151,11 @@ if (currentUser.isPermitted("lightsaber:wield")) {
 
 最后，我们可以通过logout方法注销本次登录，如下：
 
-```
+```java
 currentUser.logout();
 ```
 
-OK，至此，我们通过官方案例给小伙伴们简单介绍了Shiro中的登录操作，完整案例大家可以参考官方的demo。
+完整案例可以参考官方的demo。
 
 ## 3. 聊一聊Shiro中的Realm
 
