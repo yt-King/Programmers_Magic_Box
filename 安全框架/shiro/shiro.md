@@ -161,11 +161,11 @@ currentUser.logout();
 
 ### 3.1 登录流程是什么样的
 
-首先我们来看shiro官方文档中这样一张登录流程图：
+首先来看shiro官方文档中这样一张登录流程图：
 
-![图片](shiro.images/640.webp)
+<img src="shiro.images/ShiroAuthenticationSequence.png" alt="img" style="zoom:150%;" />
 
-参照此图，我们的登录一共要经过如下几个步骤：
+参照此图，登录一共要经过如下几个步骤：
 
 1. 应用程序代码调用Subject.login方法，传递创建好的包含终端用户的Principals(身份)和Credentials(凭证)的AuthenticationToken实例(即上文例子中的UsernamePasswordToken)。
 2. Subject实例，通常是DelegatingSubject（或子类）委托应用程序的SecurityManager通过调用securityManager.login(token)开始真正的验证工作(在DelegatingSubject类的login方法中打断点即可看到)。
