@@ -2,6 +2,8 @@
 
 ------
 
+转载自：江南一点雨
+
 ## 1.Shiro简介
 
 Apache Shiro是一个开源安全框架，提供身份验证、授权、密码学和会话管理。Shiro框架具有直观、易用等特性，同时也能提供健壮的安全性。spring中有spring security (原名Acegi)，是一个权限框架，它和spring依赖过于紧密，没有shiro使用简单。 shiro不依赖于spring，shiro不仅可以实现 web应用的权限管理，还可以实现c/s系统，分布式系统权限管理，shiro属于轻量框架，越来越多企业项目开始使用shiro。
@@ -173,21 +175,21 @@ currentUser.logout();
 4. 如果应用程序中配置了一个以上的Realm，ModularRealmAuthenticator实例将利用配置好的AuthenticationStrategy来启动Multi-Realm认证尝试。在Realms 被身份验证调用之前，期间和以后，AuthenticationStrategy被调用使其能够对每个Realm的结果作出反应。如果只有一个单一的Realm 被配置，它将被直接调用，因为没有必要为一个单一Realm的应用使用AuthenticationStrategy。
 5. 每个配置的Realm用来帮助看它是否支持提交的AuthenticationToken。如果支持，那么支持Realm的getAuthenticationInfo方法将会伴随着提交的token被调用。
 
-OK，通过上面的介绍，相信小伙伴们对整个登录流程都有一定的理解了，小伙伴可以通过打断点来验证我们上文所说的五个步骤。那么在上面的五个步骤中，小伙伴们看到了有一个Realm承担了很重要的一部分工作，那么这个Realm到底是个什么东西，接下来我们就来仔细看一看。
+上述过程中Realm承担了很重要的一部分工作，接下来将具体分析
 
 ### 3.2 什么是Realm
 
-根据Realm文档上的解释，Realms担当Shiro和你的应用程序的安全数据之间的“桥梁”或“连接器”。当它实际上与安全相关的数据如用来执行身份验证（登录）及授权（访问控制）的用户帐户交互时，Shiro从一个或多个为应用程序配置的Realm 中寻找许多这样的东西。在这个意义上说，Realm 本质上是一个特定安全的DAO：它封装了数据源的连接详细信息，使Shiro 所需的相关的数据可用。当配置Shiro 时，你必须指定至少一个Realm 用来进行身份验证和/或授权。SecurityManager可能配置多个Realms，但至少有一个是必须的。Shiro 提供了立即可用的Realms 来连接一些安全数据源（即目录），如LDAP，关系数据库（JDBC），文本配置源，像INI 及属性文件，以及更多。你可以插入你自己的Realm 实现来代表自定义的数据源，如果默认地Realm不符合你的需求。
+根据Realm文档上的解释，Realm 是一个组件，可以访问特定于应用程序的安全数据，如用户、角色和权限。Realm 将这些特定于应用程序的数据转换成 Shiro 可以理解的格式，这样 Shiro 就可以反过来提供一个简单易懂的 Subject 编程 API，无论有多少数据源，也无论数据是多么特定于应用程序。在这个意义上说，Realm **本质上是一个特定安全的DAO**：它封装了数据源的连接详细信息，使Shiro 所需的相关的数据可用。当配置Shiro 时，你必须指定至少一个Realm 用来进行身份验证和/或授权。SecurityManager可能配置多个Realms，但至少需要一个。Shiro 提供了立即可用的Realms 来连接一些安全数据源（即目录），如LDAP，关系数据库（JDBC），文本配置源，INI 属性文件，以及更多。可以使用的Realm 实现来代表自定义的数据源。
 
-看了上面这一段解释，可能还有小伙伴云里雾里，那么接下来我们来通过一个简单的案例来看看Realm到底扮演了一个什么样的作用，注意，本文的案例在上文案例的基础上完成。首先自定义一个MyRealm，内容如下：
+本文的案例在上文案例的基础上完成。首先自定义一个MyRealm，内容如下：
 
-```
+```java
 public class MyRealm implements Realm {
     public String getName() {
         return "MyRealm";
     }
     public boolean supports(AuthenticationToken token) {
-        return token instanceof UsernamePasswordToken;
+        return token instanceof UsernamePasswordToken; //判断token类型
     }
     public AuthenticationInfo getAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
         String password = new String(((char[]) token.getCredentials()));
@@ -203,11 +205,11 @@ public class MyRealm implements Realm {
 }
 ```
 
-自定义Realm实现Realm接口，该接口中有三个方法，第一个getName方法用来获取当前Realm的名字，第二个supports方法用来判断这个realm所支持的token，这里我假设值只支持UsernamePasswordToken类型的token，第三个getAuthenticationInfo方法则进行了登陆逻辑判断，从token中取出用户的用户名密码等，进行判断，当然，我这里省略掉了数据库操作，当登录验证出现问题时，抛异常即可，这里抛出的异常，将在执行登录那里捕获到（注意，由于我这里定义的MyRealm是实现了Realm接口，所以这里的用户名和密码都需要我手动判断是否正确，后面的文章我会介绍其他写法）。
+自定义Realm实现Realm接口，该接口中有三个方法，第一个getName方法用来获取当前Realm的名字，第二个supports方法用来判断这个realm所支持的token，这里我假设值只支持UsernamePasswordToken类型的token，第三个getAuthenticationInfo方法则进行了登陆逻辑判断，从token中取出用户的用户名密码等，进行判断，当然，这里省略掉了数据库操作，当登录验证出现问题时，抛异常即可，这里抛出的异常，将在执行登录那里捕获到（注意，由于这里定义的MyRealm是实现了Realm接口，所以这里的用户名和密码都需要我手动判断是否正确，后续会介绍其他写法）。
 
-OK，创建好了MyRealm之后还不够，我们还需要做一个简单配置，让MyRealm生效，将shiro.ini文件中的所有东西都注释掉，添加如下两行：
+OK，创建好了MyRealm之后还不够，还需要做一个简单配置，让MyRealm生效，将shiro.ini文件中的所有东西都注释掉，添加如下两行：
 
-```
+```ini
 MyRealm= org.sang.MyRealm
 securityManager.realms=$MyRealm
 ```
@@ -218,45 +220,45 @@ securityManager.realms=$MyRealm
 
 ### 4.1 Realm的继承关系
 
-通过查看类的继承关系，我们发现Realm的子类实际上有很多种，这里我们就来看看有代表性的几种：
+通过查看类的继承关系可以发现Realm的子类实际上有很多种，这里来看看有代表性的几种：
 
-1. IniRealm
+IniRealm
 
-可能我们并不知道，实际上这个类在我们第二篇文章中就已经用过了。这个类一开始就有如下两行定义：
+这个类一开始就有如下两行定义：
 
-```
+```java
 public static final String USERS_SECTION_NAME = "users";
 public static final String ROLES_SECTION_NAME = "roles";
 ```
 
 这两行配置表示shiro.ini文件中，[users]下面的表示表用户名密码还有角色，[roles]下面的则是角色和权限的对应关系。
 
-1. PropertiesRealm
+PropertiesRealm
 
 PropertiesRealm则规定了另外一种用户、角色定义方式，如下：
 
 user.user1=password,role1 role.role1=permission1
 
-1. JdbcRealm
+JdbcRealm
 
 这个顾名思义，就是从数据库中查询用户的角色、权限等信息。打开JdbcRealm类，我们看到源码中有如下几行：
 
-```
+```java
 protected static final String DEFAULT_AUTHENTICATION_QUERY = "select password from users where username = ?";
 protected static final String DEFAULT_SALTED_AUTHENTICATION_QUERY = "select password, password_salt from users where username = ?";
 protected static final String DEFAULT_USER_ROLES_QUERY = "select role_name from user_roles where username = ?";
 protected static final String DEFAULT_PERMISSIONS_QUERY = "select permission from roles_permissions where role_name = ?";
 ```
 
-根据这几行预设的SQL我们就可以大致推断出数据库中表的名称以及字段了，当然，我们也可以自定义SQL。JdbcRealm实际上是AuthenticatingRealm的子类，关于AuthenticatingRealm我们在后面还会详细说到，这里先不展开。接下来我们就来详细说说这个JdbcRealm。
+根据这几行预设的SQL我们就可以大致推断出数据库中表的名称以及字段了，当然，也可以自定义SQL。JdbcRealm实际上是AuthenticatingRealm的子类，关于AuthenticatingRealm我们在后面还会详细说到，这里先不展开。接下来我们就来详细说说这个JdbcRealm。
 
 ### 4.2 JdbcRealm
 
-1. 准备工作
+#### 准备工作
 
-使用JdbcRealm，涉及到数据库操作，要用到数据库连接池，这里我使用Druid数据库连接池，因此首先添加如下依赖：
+使用JdbcRealm，涉及到数据库操作，要用到数据库连接池，这里使用Druid数据库连接池，因此首先添加如下依赖：
 
-```
+```xml
 <dependency>
     <groupId>com.alibaba</groupId>
     <artifactId>druid</artifactId>
@@ -269,19 +271,21 @@ protected static final String DEFAULT_PERMISSIONS_QUERY = "select permission fro
 </dependency>
 ```
 
-1. 数据库创建
+#### 数据库创建
 
-想要使用JdbcRealm，那我首先要创建数据库，根据JdbcRealm中预设的SQL，我定义的数据库表结构如下：
+想要使用JdbcRealm，首先要创建数据库，根据JdbcRealm中预设的SQL，定义的数据库表结构如下：
 
 ![图片](shiro.images/640-16408658389194)
 
-这里为了大家能够直观的看到表的关系，我使用了外键，实际工作中，视情况而定。然后向表中添加几条测试数据。数据库脚本小伙伴可以在github上下载到（https://github.com/lenve/shiroSamples/blob/v4/shiroDemo.sql）。
+这里为了能够直观的看到表的关系，使用了外键，实际工作中，视情况而定。然后向表中添加几条测试数据。数据库脚本可以在github上下载到
 
-1. 配置文件处理
+（https://github.com/lenve/shiroSamples/blob/v4/shiroDemo.sql）
+
+#### 配置文件处理
 
 然后将shiro.ini中的所有配置注释掉，添加如下配置：
 
-```
+```ini
 jdbcRealm=org.apache.shiro.realm.jdbc.JdbcRealm
 dataSource=com.alibaba.druid.pool.DruidDataSource
 dataSource.driverClassName=com.mysql.jdbc.Driver
@@ -293,35 +297,17 @@ jdbcRealm.permissionsLookupEnabled=true
 securityManager.realms=$jdbcRealm
 ```
 
-这里的配置文件都很简单，不做过多赘述，小伙伴唯一需要注意的是permissionsLookupEnabled需要设置为true，否则一会JdbcRealm就不会去查询权限用户权限。
-
-1. 测试
-
-OK，做完上面几步就可以测试了，测试方式和第二篇文章中一样，我们可以测试下用户登录，用户角色和用户权限。
-
-1. 自定义查询SQL
-
-小伙伴们看懂了上文，对于自定义查询SQL就没什么问题了。我这里举一个简单的例子，比如我要自定义authenticationQuery对对应的SQL，查看JdbcRealm源码，我们发现authenticationQuery对应的SQL本来是`select password from users where username = ?`，如果需要修改的话，比如说我的表名不是users而是employee，那么在shiro.ini中添加如下配置即可：
-
-```
-jdbcRealm.authenticationQuery=select password from employee where username = ?
-```
-
-OK,这个小伙伴下来自己做尝试，我这里就不演示了。
+这里的配置文件都很简单，不做过多赘述，唯一需要注意的是permissionsLookupEnabled需要设置为true，否则一会JdbcRealm就不会去查询权限用户权限。
 
 ## 5. Shiro中多Realm的认证策略问题
 
 ### 5.1 多Realm认证策略
 
-不知道小伙伴们是否还记得这张登录流程图：
+先来看一个简单的多Realm情况。
 
-![图片](shiro.images/640.webp)
+前面已经创建了一个MyRealm，也用过JdbcRealm，但都是单独使用的，现在我想将两个一起使用，只需要修改shiro.ini配置即可，如下：
 
-从这张图中我们可以清晰看到Realm是可以有多个的，不过到目前为止，我们所有的案例都还是单Realm，那么我们先来看一个简单的多Realm情况。
-
-前面的文章我们自己创建了一个MyRealm，也用过JdbcRealm，但都是单独使用的，现在我想将两个一起使用，只需要修改shiro.ini配置即可，如下：
-
-```
+```ini
 MyRealm= org.sang.MyRealm
 
 jdbcRealm=org.apache.shiro.realm.jdbc.JdbcRealm
@@ -337,7 +323,7 @@ securityManager.realms=$jdbcRealm,$MyRealm
 
 但是此时我数据库中用户的信息是sang/123,MyRealm中配置的信息也是sang/123，我把MyRealm中的用户信息修改为`江南一点雨/456`，此时，我的MyRealm的getAuthenticationInfo方法如下：
 
-```
+```java
 public AuthenticationInfo getAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
     String password = new String(((char[]) token.getCredentials()));
     String username = token.getPrincipal().toString();
@@ -1378,8 +1364,6 @@ OK，整体来说shiro中的缓存配置还是非常简单的。
 That's all.
 
 本小节案例下载地址：https://github.com/lenve/shiroSamples/archive/v13.zip
-
-待续。。。
 
 
 
