@@ -562,7 +562,7 @@ securityManager.realms=$jdbcRealm
 
 shiro中加盐的方式很简单，在用户注册时生成密码密文时，就要加入盐，如下几种方式：
 
-```
+```java
 Md5Hash md5Hash = new Md5Hash("123", "sang", 1024);
 Sha512Hash sha512Hash = new Sha512Hash("123", "sang", 1024);
 SimpleHash md5 = new SimpleHash("md5", "123", "sang", 1024);
@@ -580,7 +580,7 @@ SimpleHash sha512 = new SimpleHash("sha-512", "123", "sang", 1024)
 
 四种不同的SaltStyle对应了四种不同的密码处理方式，部分源码如下：
 
-```
+```java
 switch (saltStyle) {
 case NO_SALT:
     password = getPasswordForUser(conn, username)[0];
@@ -602,13 +602,13 @@ case EXTERNAL:
 
 在COLUMN这种情况下，SQL查询结果应该包含两列，第一列是密码，第二列是盐，这里默认执行的SQL在JdbcRealm一开头就定义好了，如下：
 
-```
+```sql
 protected static final String DEFAULT_SALTED_AUTHENTICATION_QUERY = "select password, password_salt from users where username = ?";
 ```
 
 即系统默认的盐是数据表中的password_salt提供的，但是我这里是username字段提供的，所以这里我一会要自定义这条SQL。自定义方式很简单，修改shiro.ini文件，添加如下两行：
 
-```
+```ini
 jdbcRealm.saltStyle=COLUMN
 jdbcRealm.authenticationQuery=select password,username from users where username=?
 ```
@@ -617,7 +617,7 @@ jdbcRealm.authenticationQuery=select password,username from users where username
 
 不过，由于ini文件中不支持枚举，saltStyle的值实际上是一个枚举类型，所以我们在测试的时候，需要增加一个枚举转换器在我们的main方法中，如下：
 
-```
+```java
 BeanUtilsBean.getInstance().getConvertUtils().register(new AbstractConverter() {
     @Override
     protected String convertToString(Object value) throws Throwable {
