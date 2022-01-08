@@ -4,6 +4,8 @@
 
 ## 1.简介
 
+官方文档：https://www.infoq.com/articles/apache-shiro/
+
 Apache Shiro (发音为“ shee-roh”，日语中的“城堡”)是一个功能强大、易于使用的 Java 安全框架，它执行身份验证、授权、加密和会话管理，可用于保护任何应用程序——从命令行应用程序、移动应用程序到最大的 web 和企业应用程序。下图为shiro的所有功能
 
 ![image-20220108151538779](shiro%E7%AC%94%E8%AE%B0.images/image-20220108151538779.png)
@@ -104,4 +106,73 @@ RBAC 是基于角色的访问控制（`Role-Based Access Control` ）在RBAC 中
 
 ![image-20220108142012096](shiro%E7%AC%94%E8%AE%B0.images/image-20220108142012096.png)
 
-## 2.Authentication
+## 2.Authentication（认证）
+
+身份验证是验证用户身份的过程。也就是说，当用户使用应用程序进行身份验证时，他们是在证明自己确实是他们所说的那个人。这有时也被称为“登录”。这通常是一个三步骤的过程。
+
+>1. 收集用户的识别信息
+>2.  向系统提交主体和凭据
+>3. 如果提交的凭据与系统期望的用户标识(主体)相匹配，则认为该用户已通过身份验证。如果它们不匹配，则认为该用户没有经过身份验证
+
+这个过程的一个常见例子是用户名/密码组合，每个人都熟悉这个例子。当大多数用户登录到软件应用程序时，他们通常提供他们的用户名(主体)和支持他们的密码(凭证)。如果系统中存储的密码(或其表示形式)与用户指定的密码相匹配，则认为这些密码是经过身份验证的。Shiro 以一种简单直观的方式支持同样的工作流程。Shiro 有一个以Subject为中心的 API ——在运行时，几乎所有你想用 Shiro 做的事情都是通过与当前正在执行的Subject交互来实现的。因此，要登录 Subject，只需调用它的 login 方法，传递一个 AuthenticationToken 实例，该实例表示已提交的主体和凭据(在本例中为用户名和密码)。
+
+```java
+//1.获取提交的主体和凭据:
+AuthenticationToken token = new UsernamePasswordToken(username, password);
+
+//2. 获取当前用户（subject）
+Subject currentUser = SecurityUtils.getSubject();
+
+//3. 登录
+currentUser.login(token);
+```
+
+当登录方法被调用时，SecurityManager 将接收 **AuthenticationToken** 并将其分派到一个或多个realms，以允许每个realm根据需要执行身份验证检查。每个realm都可以根据需要对提交的 authenticationtoken 进行响应。但是如果尝试登录失败了会发生什么呢？如果用户指定的密码不正确怎么办？您可以通过对 Shiro 的运行时 AuthenticationException 做出响应来处理故障
+
+```java
+//异常捕获
+try {
+    currentUser.login(token);
+} catch (IncorrectCredentialsException ice) { …
+} catch (LockedAccountException lae) { …
+}
+…
+catch (AuthenticationException ae) {…
+} 
+```
+
+## 3.Authorization（授权）
+
+授权实质上是访问控制——控制用户在应用程序中可以访问的内容，如资源、网页等。大多数用户通过使用角色和权限等概念来执行访问控制。也就是说，通常允许用户根据分配给他们的角色和/或权限做某些事情或不做某些事情。然后，应用程序可以基于对这些角色和权限的检查来控制所公开的功能。subjectAPI 允许我们非常容易地执行角色和权限检查。
+
+```java
+//角色检查示例
+if ( subject.hasRole(“administrator”) ) {
+    //show the ‘Create User’ button
+} else {
+    //grey-out the button?
+} 
+```
+
+权限检查是执行授权的另一种方式。上面例子中的角色检查有一个重大缺陷: 不能在运行时添加或删除角色。如果需要能够在运行时更改角色的含义，或者根据需要添加或删除角色，那么您必须依赖其他东西。为此，Shiro 支持其权限概念。权限是功能的原始声明，例如“打开一扇门”、“创建博客条目”、“删除 jsmith”用户等等。通过**使用权限反映应用程序的原始功能**，只需要在更改应用程序的功能时更改权限检查。反过来，您可以在运行时根据需要将权限分配给角色或用户。
+
+```java
+//权限检查示例
+//“ user: create”字符串是遵循某些解析约定的权限字符串的示例。Shiro 通过它的 WildcardPermission 支持这种开箱即用的约定。 WildcardPermission 在创建安全策略时非常灵活，甚至支持实例级访问控制。
+if ( subject.isPermitted(“user:create”) ) {
+    //show the ‘Create User’ button
+} else {
+    //grey-out the button?
+} 
+```
+
+实例级权限检查——这个例子表明，如果需要，可以控制对单个资源的访问，甚至可以控制到非常细粒度的实例级别。甚至可以发明自己的许可语法。上面的调用最终会被发送到 SecurityManager，SecurityManager 会咨询一个或多个realm以做出访问控制决策。这允许realm在必要时响应身份验证和授权操作。
+
+```java
+if ( subject.isPermitted(“user:delete:jsmith”) ) {
+    //delete the ‘jsmith’ user
+} else {
+    //don’t delete ‘jsmith’
+}
+```
+
