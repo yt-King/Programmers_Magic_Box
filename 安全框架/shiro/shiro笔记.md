@@ -108,22 +108,30 @@ RBAC 是基于角色的访问控制（`Role-Based Access Control` ）在RBAC 中
 
 ## 2.Authentication（认证）
 
+### 2.1-认证流程
+
 身份验证是验证用户身份的过程。也就是说，当用户使用应用程序进行身份验证时，他们是在证明自己确实是他们所说的那个人。这有时也被称为“登录”。这通常是一个三步骤的过程。
 
 >1. 收集用户的识别信息
->2.  向系统提交主体和凭据
+>2.  向系统提交*principals* 和*credentials* 
 >3. 如果提交的凭据与系统期望的用户标识(主体)相匹配，则认为该用户已通过身份验证。如果它们不匹配，则认为该用户没有经过身份验证
 
-这个过程的一个常见例子是用户名/密码组合，每个人都熟悉这个例子。当大多数用户登录到软件应用程序时，他们通常提供他们的用户名(主体)和支持他们的密码(凭证)。如果系统中存储的密码(或其表示形式)与用户指定的密码相匹配，则认为这些密码是经过身份验证的。Shiro 以一种简单直观的方式支持同样的工作流程。Shiro 有一个以Subject为中心的 API ——在运行时，几乎所有你想用 Shiro 做的事情都是通过与当前正在执行的Subject交互来实现的。因此，要登录 Subject，只需调用它的 login 方法，传递一个 AuthenticationToken 实例，该实例表示已提交的主体和凭据(在本例中为用户名和密码)。
+- **principals**是一个subject的识别属性。主体可以是任何标识主体的东西，例如名(给定名)、姓(姓或家庭名)、用户名、社会安全号码等。当然，诸如姓氏之类的东西并不擅长独特地识别一个人Subject, 因此，用于身份验证的最佳主体对于应用程序是唯一的——通常是用户名或电子邮件地址
+
+- **Credentials** 通常是秘密值，只作为他们事实上拥有声称的身份的证据。Credentials的一些常见例子是密码、指纹和视网膜扫描等生物特征数据以及 x. 509证书
+
+一个常见例子是用户名/密码组合，每个人都熟悉这个例子。当大多数用户登录到软件应用程序时，他们通常提供他们的用户名(主体)和支持他们的密码(凭证)。如果系统中存储的密码(或其表示形式)与用户指定的密码相匹配，则认为这些密码是经过身份验证的。Shiro 以一种简单直观的方式支持同样的工作流程。Shiro 有一个以Subject为中心的 API ——在运行时，几乎所有你想用 Shiro 做的事情都是通过与当前正在执行的Subject交互来实现的。因此，要登录 Subject，只需调用它的 login 方法，传递一个 AuthenticationToken 实例，该实例表示已提交的主体和凭据(在本例中为用户名和密码)。
 
 ```java
-//1.获取提交的主体和凭据:
+//1.获取提交的principals和credentials
 AuthenticationToken token = new UsernamePasswordToken(username, password);
-
+/**
+这里使用 UsernamePasswordToken，支持最常见的用户名/密码身份验证方法。这是 Shiro 的 org.apache.Shiro.authc 的实现。AuthenticationToken 接口，它是 Shiro 的身份验证系统用来表示提交的主体和凭据的基本接口。需要注意的是 Shiro 并不关心你是如何获得这些信息的: 可能数据是由提交 HTML 表单的用户获取的，或者可能是从 HTTP 头部获取的，或者可能是从 Swing 或 Flex GUI 密码表单读取的，或者可能是通过命令行参数。从应用程序最终用户收集信息的过程与 Shiro 的 AuthenticationToken 概念完全分离。我们可以随心所欲地构造和表示 AuthenticationToken 实例——它与协议无关。
+*/
 //2. 获取当前用户（subject）
 Subject currentUser = SecurityUtils.getSubject();
 
-//3. 登录
+//3. 在获取当前正在执行的 Subject 之后，进行一个登录调用，传递前面创建的 AuthenticationToken 实例。
 currentUser.login(token);
 ```
 
@@ -133,13 +141,23 @@ currentUser.login(token);
 //异常捕获
 try {
     currentUser.login(token);
-} catch (IncorrectCredentialsException ice) { …
-} catch (LockedAccountException lae) { …
+} catch ( UnknownAccountException uae ) { ...
+} catch ( IncorrectCredentialsException ice ) { ...
+} catch ( LockedAccountException lae ) { ...
+} catch ( ExcessiveAttemptsException eae ) { ...
+} ... catch your own ...
+} catch ( AuthenticationException ae ) {
+    //unexpected error?
 }
-…
-catch (AuthenticationException ae) {…
-} 
+
+//No problems, continue on as expected...
 ```
+
+Shiro 有一个丰富的运行时身份验证异常层次结构，可以准确地指出尝试失败的原因。您可以在 try/catch 块中封装 login，捕获任何您希望捕获的异常并相应地对其作出响应。如果现有的一个异常类不满足需要，可以创建自定义 authenticationexception 来表示特定的失败场景。
+
+### 2.2-记忆 vs. 认证
+
+
 
 ## 3.Authorization（授权）
 
@@ -176,3 +194,72 @@ if ( subject.isPermitted(“user:delete:jsmith”) ) {
 }
 ```
 
+## 4.Session Management（会话管理）
+
+Apache Shiro 在安全框架领域提供了一些独一无二的东西: 在任何应用程序和任何架构层中都可以使用的一致的 Session API。也就是说，Shiro 可以为任何应用程序提供会话编程范型，从小型的独立守护程序到最大的集群式 web 应用程序。这意味着希望使用会话的应用程序开发人员不再被迫在不需要 Servlet 或 EJB 容器的情况下使用它们。或者，如果使用这些容器，开发人员现在可以选择在任何层中使用统一和一致的会话 API，而不是 servlet 或特定于 ejb 的机制。
+
+Shiro Session最重要的好处之一可能是它们是独立于容器的，在session集群方面，Shiro 的架构允许可插拔的 Session 数据存储，这意味着只需配置一次会话集群，无论部署环境是 Tomcat、 Jetty、 JEE 服务器还是其他，它都将以相同的方式工作。没有必要根据如何部署应用程序来重新配置应用程序。Shiro Session的另一个好处是，如果需要，可以跨客户端共享会话数据。
+
+```java
+//任何环境中访问 Subject 的会话
+Session session = subject.getSession();
+Session session = subject.getSession(boolean create);
+//Session methods
+session.getAttribute(“key”, someValue);
+Date start = session.getStartTimestamp();
+Date timestamp = session.getLastAccessTime();
+session.setTimeout(millis);
+...
+```
+
+这些方法在概念上与 HttpServletRequest API 相同。第一个方法将返回 Subject 的现有 Session，或者如果还没有，它将创建一个新 Session 并返回它。第二个方法接受一个布尔参数，这个参数决定是否创建一个还不存在的 Session。一旦你获得了主体的 Session，你可以几乎和 HttpSession 一样地使用它。唯一不同的是你可以在任何应用程序中使用 Shiro Sessions，而不仅仅是在 web 应用程序中。
+
+## 5.Cryptography（加密）
+
+Shiro 在加密方面的目标是简化和使用 JDK 的加密支持。需要注意的是，密码术通常并不特定于Subject，因此它是 Shiro API 中不特定于Subject的一个领域。可以在任何地方使用 Shiro 的加密支持，即使没有使用 Subject。Shiro 真正关注加密支持的两个领域是加密哈希(又名消息摘要)和加密密码。
+
+### 5.1-简单功能
+
+#### 接口驱动的、基于 POJO 的
+
+Shiro 的所有 api 都是基于接口的，并作为 POJO 实现。这允许我们使用与 javabean 兼容的格式(如 JSON、 YAML、 Spring XML 等)轻松地配置 Shiro Cryptography 组件。还可以根据需要重写或定制 Shiro，利用其 API 节省时间和精力。
+
+#### JCE 上的简化包装器
+
+ Java 密码扩展(JCE)很复杂并且难以使用。Shiro 的 Cryptography api 更容易理解和使用，而且它们极大地简化了 JCE 的概念。
+
+####  Object Orientifies加密概念
+
+JDK/JCE 的 Cipher and Message Digest (Hash)类是抽象类，相当混乱，要求使用 obtuse factory 方法和类型不安全的字符串参数来获取您想要使用的实例。Shiro的‘Object Orientifies’加密和散列，基于一个干净的对象层次结构，并允许通过简单的实例化使用它们。
+
+#### **Runtime Exceptions**
+
+和shiro的其他地方一样，所有的加密异常都是 runtimeexception。可以根据需要决定是否捕获异常。
+
+### 5.2-加密功能
+
+#### OO 层次结构
+
+与 JCE 不同，Shiro cipherservice 遵循一个面向对象的类层次结构，这个类层次结构与它们的数学概念相匹配: AbstractSymmetricCipherService、 DefaultBlockCipherService、 AesCipherService 等。这样可以轻松地覆盖现有的类并根据需要扩展功能。
+
+#### 只需实例化一个类
+
+与 JCE 使用 String 标记参数的混乱的工厂方法不同，使用 Shiro 加密器要容易得多——只需实例化一个类，必要时使用 javabean 属性配置它，并按需使用它。例如：new AesCipherService ()
+
+#### 更安全的默认设置
+
+JCE Cipher 实例假设一个最小公分母默认值，并不会自动启用更安全的选项。Shiro 将自动启用更安全的选项，以确保数据在默认情况下尽可能安全，防止意外的安全漏洞。
+
+### 5.3-散列特性
+
+#### 默认接口实现 
+
+Shiro 提供了默认的现成的 Hash (即 JDK 中的消息摘要)实现，比如 MD5、 SHA1、 sha-256等等。这提供了一种类型安全的构造方法(例如，新的 Md5Hash (data)) ，而不必在 JDK 中使用类型不安全的字符串工厂方法。
+
+#### 内置的十六进制和 base64转换
+
+Shiro Hash 实例可以通过 toHex ()和 toBase64()方法自动提供十六进制和 base-64编码的散列数据。所以现在不需要指出如何自己正确地编码数据。
+
+#### 内置 Salt 和反复散列支持
+
+盐和反复散列迭代在散列数据时是非常有价值的工具，特别是在保护用户密码时。Shiro 的 Hash 实现支持盐和多重散列迭代，所以不必在任何你可能需要的地方重复这个逻辑。
