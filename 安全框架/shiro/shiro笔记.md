@@ -284,6 +284,8 @@ securityManager.realms = $fooRealm, $barRealm, $blahRealm
 
 ## 3.Authorization（授权）
 
+### 3.1-简介
+
 授权实质上是访问控制——控制用户在应用程序中可以访问的内容，如资源、网页等。大多数用户通过使用角色和权限等概念来执行访问控制。也就是说，通常允许用户根据分配给他们的角色和/或权限做某些事情或不做某些事情。然后，应用程序可以基于对这些角色和权限的检查来控制所公开的功能。subjectAPI 允许我们非常容易地执行角色和权限检查。
 
 ```java
@@ -295,27 +297,150 @@ if ( subject.hasRole(“administrator”) ) {
 } 
 ```
 
+### 3.2-核心三要素——权限、角色、用户
+
+#### 权限
+
+Apache shiro 中的权限表示安全策略中最原子的元素。它们从根本上看是关于行为的声明，并且明确地表示在应用程序中可以做什么。权限语句从本质上描述了资源以及 Subject 与这些资源交互时可能采取的操作。例如：
+
+>- Open a file 打开一个文件
+>- View the ‘/user/list’ web page 查看“/user/list”网页
+>- Print documents 打印文件
+>- Delete the ‘jsmith’ user 删除“ jsmith”用户
+
+需要注意的式权限只表示一种行为，不能反映出谁有权力做这种行为。定义谁(用户)可以做什么(权限)是以某种方式向用户分配权限。这通常是由应用程序完成的，并且在不同的应用程序之间会有很大的不同。**shiro中权限的粒度可以划分的非常细致**。
+
+#### 角色
+
+角色是一个被命名的实体，通常表示一组行为或职责。这些行为可以转化为软件应用程序可以执行或不可以执行的操作。角色通常分配给用户帐户，因此通过关联，用户可以使用分配给不同角色的权限。Shiro 支持两种角色概念:
+
+- **Implicit Roles 隐式角色**：即直接通过角色来验证用户有没有操作权限，如在应用中CTO、技术总监、开发工程师可以使用打印机，假设某天不允许开发工程师使用打印机，此时需要从应用中删除相应代码；再如在应用中CTO、技术总监可以查看用户、查看权限；突然有一天不允许技术总监查看用户、查看权限了，需要在相关代码中把技术总监角色从判断逻辑中删除掉；即粒度是以角色为单位进行访问控制的，粒度较粗；如果进行修改可能造成多处代码修改。
+
+- **Explicit Roles 显式角色**：在程序中通过权限控制谁能访问某个资源，角色聚合一组权限集合；这样假设哪个角色不能访问某个资源，只需要从角色代表的权限集合中移除即可；无须修改多处代码；即粒度是以资源/实例为单位的；粒度较细。
+
 权限检查是执行授权的另一种方式。上面例子中的角色检查有一个重大缺陷: 不能在运行时添加或删除角色。如果需要能够在运行时更改角色的含义，或者根据需要添加或删除角色，那么您必须依赖其他东西。为此，Shiro 支持其权限概念。权限是功能的原始声明，例如“打开一扇门”、“创建博客条目”、“删除 jsmith”用户等等。通过**使用权限反映应用程序的原始功能**，只需要在更改应用程序的功能时更改权限检查。反过来，您可以在运行时根据需要将权限分配给角色或用户。
 
-```java
-//权限检查示例
-//“ user: create”字符串是遵循某些解析约定的权限字符串的示例。Shiro 通过它的 WildcardPermission 支持这种开箱即用的约定。 WildcardPermission 在创建安全策略时非常灵活，甚至支持实例级访问控制。
-if ( subject.isPermitted(“user:create”) ) {
-    //show the ‘Create User’ button
-} else {
-    //grey-out the button?
-} 
-```
+#### 用户（users）
 
-实例级权限检查——这个例子表明，如果需要，可以控制对单个资源的访问，甚至可以控制到非常细粒度的实例级别。甚至可以发明自己的许可语法。上面的调用最终会被发送到 SecurityManager，SecurityManager 会咨询一个或多个realm以做出访问控制决策。这允许realm在必要时响应身份验证和授权操作。
+在shiro中，subject实际上是用户的概念，用户可以通过与角色或直接权限的关联在应用程序中执行某些操作。比如说，我们有一个user实体类，我们可以直接将权限分配给这个用户，也可以只把权限分配个角色，然后将用户与角色关联，用户可以传递性地“拥有”分配给他们角色的权限。
+
+### 3.3-三种授权方式
+
+#### 编程式：通过写if/else 授权代码块完成
 
 ```java
-if ( subject.isPermitted(“user:delete:jsmith”) ) {
-    //delete the ‘jsmith’ user
-} else {
-    //don’t delete ‘jsmith’
+Subject subject = SecurityUtils.getSubject();
+if(subject.hasRole(“admin”)) {
+	//有权限
+} else {undefined
+	//无权限
 }
 ```
+
+#### 注解式：通过在执行的Java方法上放置相应的注解完成
+
+```java
+@RequiresRoles("admin")
+public void hello() {undefined
+	//有权限
+}//没有权限将抛出相应的异常；
+```
+
+#### JSP/GSP 标签：在JSP/GSP 页面通过相应的标签完成
+
+```jsp
+<shiro:hasRole name="admin">
+<!— 有权限—>
+</shiro:hasRole>
+```
+
+### 3.4-Role-Based Authorization（基于角色的授权）
+
+最简单的一种方式是直接检查该用户是否具有某个特定的角色并授权或进行下一步的行为。
+
+```java
+Subject currentUser = SecurityUtils.getSubject();
+
+if (currentUser.hasRole("administrator")) {
+    //show the admin button 
+} else {
+    //don't show the button?  Grey it out? 
+}
+```
+
+除了通过hasRole（）方法检查还可以简单地断言它们在执行逻辑之前有一个预期的角色。如果 Subject 没有预期的角色，则将引发 AuthorizationException。如果它们确实具有预期的角色，那么逻辑将按照预期继续。
+
+```java
+Subject currentUser = SecurityUtils.getSubject();
+
+//先进行检查，如果没有该角色则抛出异常
+currentUser.checkRole("bankTeller");
+openBankAccount();
+```
+
+与 hasRole 方法相比，这种方法的一个好处是代码可以更加简洁。
+
+### 3.5-Permission-Based Authorization（基于权限的授权）
+
+执行访问控制的更好方法通常是通过基于权限的授权，因为它与应用程序的原始功能(以及应用程序核心资源的行为)密切相关，所以基于权限的授权源代码在功能更改时更改，而不是在安全策略更改时更改。这意味着与类似的基于角色的授权代码相比，因为代码收到的影响会小很多。
+
+我们可以通过isallowed()方法来检查权限，有两种主要的权限检查方法——使用基于对象的权限**实例**或使用表示权限的**字符串**
+
+#### Object-based Permission Checks  基于对象的权限检查
+
+实例化 Shiro 的 org.apache.Shiro.authz 实例接口，并将其传递给  isPermitted 方法，这些方法接受权限实例。例如，考虑下面的场景: 在一个办公室里有一台打印机和一台唯一标识符激光4400n。我们的软件需要检查，看看目前的用户是否允许在打印机上打印文件，然后我们才允许他们按下“打印”按钮。权限检查，看看这是否可能是这样制定的:
+
+```java
+Permission printPermission = new PrinterPermission("laserjet4400n", "print");
+
+Subject currentUser = SecurityUtils.getSubject();
+
+if (currentUser.isPermitted(printPermission)) {
+    //show the Print button 
+} else {
+    //don't show the button?  Grey it out?
+}
+```
+
+基于对象的权限在以下情况下很有用:
+
+- 需要编译时类型安全性
+- 希望保证权限的表示和正确使用
+- 需要对如何使用权限解析逻辑(称为权限蕴涵逻辑，基于权限接口)进行显式控制
+- 希望保证“权限”能够准确地反映应用程序资源(例如，可以在项目构建期间基于项目的域模型自动生成“权限”类)
+
+#### String-based permission checks  基于字符串的权限检查
+
+依照上面的例子，可以将代码改为如下：
+
+```java
+Subject currentUser = SecurityUtils.getSubject();
+//Permission p = new WildcardPermission("printer:print:laserjet4400n"); 相当于是快捷方式
+if (currentUser.isPermitted("printer:print:laserjet4400n")) {
+    //show the Print button
+} else {
+    //don't show the button?  Grey it out? 
+}
+```
+
+这个示例仍然显示相同的实例级权限检查，但是权限的重要部分——打印机(资源类型)、打印(操作)和 laserjet4400n (实例 id)——都表示在一个 String 中。
+
+如同角色授权一样也可以采用断言的方式简化代码：
+
+```java
+Subject currentUser = SecurityUtils.getSubject();
+//实例化的方式
+Permission p = new AccountPermission("open");
+currentUser.checkPermission(p);
+openBankAccount();
+//string字符串的方式
+currentUser.checkPermission("account:open");
+openBankAccount();
+```
+
+### 3.6-Annotation-based Authorization  基于注释的授权
+
+
 
 ## 4.Session Management（会话管理）
 
