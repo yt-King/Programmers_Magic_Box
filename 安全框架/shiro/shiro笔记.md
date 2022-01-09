@@ -155,9 +155,132 @@ try {
 
 Shiro 有一个丰富的运行时身份验证异常层次结构，可以准确地指出尝试失败的原因。您可以在 try/catch 块中封装 login，捕获任何您希望捕获的异常并相应地对其作出响应。如果现有的一个异常类不满足需要，可以创建自定义 authenticationexception 来表示特定的失败场景。
 
-### 2.2-记忆 vs. 认证
+### 2.2-Remembered vs. Authenticated
 
+```java
+//示例
+UsernamePasswordToken token = new UsernamePasswordToken(username, password);
 
+//表示希望 Shiro 为身份验证尝试执行“ Remember Me”服务。这可以确保 Shiro 在以后返回到应用程序时记住用户身份
+token.setRememberMe(true);
+```
+
+如上面的例子所示，Shiro 除了支持正常的登录过程之外，还支持“记住我”的概念。值得一提的是，Shiro 对记住的subject和经过实际验证的subject做了非常精确的区分:
+
+- **Remembered**:  记住的**Subject** 是非匿名的，并且有一个已知的身份 (即 subject.getPrincipals ()是非空的 ) 。但是这个身份是在前一个会话期间的上一个身份验证中记住的。如果 subject.isRemembered ()返回 true，则认为该主题已被记住。
+- **Authenticated**:  认证的**Subject** 是在当前会话期间成功身份验证的**Subject**(即在没有抛出异常的情况下调用登录方法)。如果 subject.isAuthenticated ()返回 true，则认为**Subject**已通过身份验证。
+
+上述的这两个状态是相互排斥的——一个状态的 true 值表示另一个状态的 false 值，反之亦然。原因如下：
+
+```apl
+“认证”这个词有着非常强烈的证明的意味。也就是说Subject已经说明了他是谁，这是可以确定的。但是处于被记住的状态与程序交互式“认证”的状态就不存在了，“记住我”这个状态只能给系统一个我可能是谁的概念，没有办法绝对保证记住的Subject就是预期的用户。所以尽管应用程序的许多部分可以根据记住的Subject执行用户特定的逻辑，但是要避免一些高敏感的操作（在用户认证自己之前），例如，一个检查 Subject 是否可以访问财务信息的检查应该几乎总是依赖于 isAuthenticated () ，而不是依赖于 isRemembered () ，以保证预期的和经过验证的身份。
+```
+
+### 2.3-Logging Out 退出
+
+与验证相反的是释放所有已知的识别状态。当 Subject 与应用程序交互完成后，可以调用 Subject.logout ()放弃所有标识信息:
+
+```java
+currentUser.logout(); //删除所有的识别信息，并使他们的会话失效。
+```
+
+当调用注销时，任何现有的 Session 都将失效，任何身份都将被去除(例如，在 web 应用程序中，RememberMe cookie 也将被删除)。在 Subject 注销之后，Subject 实例再次被认为是匿名的，如果需要，**除了 web 应用程序之外**，可以重新使用它再次登录。
+
+![image-20220109123540278](shiro%E7%AC%94%E8%AE%B0.images/image-20220109123540278.png)
+
+### 2.4-Authentication Sequence 认证顺序
+
+接下来看 Shiro 内部在发生身份验证尝试时所发生的情况。流程图如下：
+
+![image-20220109123654166](shiro%E7%AC%94%E8%AE%B0.images/image-20220109123654166.png)
+
+1. 应用程序代码调用 Subject.login 方法，并传入代表最终用户主体和凭据的构造 AuthenticationToken 实例。
+
+2. Subject 实例，通常是 DelegatingSubject (或子类)通过调用 SecurityManager.login (令牌)委托给应用程序的 SecurityManager，实际的身份验证工作从这里开始。
+
+3. SecurityManager 作为一个基本的“保护伞”组件，接收令牌并通过调用 Authenticator.authenticate (token)简单地委托给它的内部 Authenticator 实例。基本上都是 ModularRealmAuthenticator 实例，它支持在身份验证期间协调一个或多个 Realm 实例。Modularrealmauthentator 实质上为 Apache Shiro 提供了一个 PAM- 风格的范例(在 PAM 术语中，每个realm都是一个“模块”)。
+
+4. 如果为应用程序配置了多个realm，ModularRealmAuthenticator 实例将利用其配置的 AuthenticationStrategy 启动多领域身份验证尝试。在调用领域进行身份验证之前、期间和之后，将调用 AuthenticationStrategy，以允许它对每个领域的结果做出反应。
+
+   ![image-20220109134320845](shiro%E7%AC%94%E8%AE%B0.images/image-20220109134320845.png)
+
+5. 查看每个配置的 Realm 是否支持提交的 AuthenticationToken。支持 Realm 的 getawatitationinfo 方法将被提交的令牌调用。**getAuthenticationInfo**方法有效地代表了针对特定领域的单一身份验证尝试。
+
+Shiro SecurityManager 的实现默认是使用 **ModularRealmAuthenticator** 实例，支持单领域和多领域的应用程序。在single realm应用程序中，**ModularRealmAuthenticator** 将直接调用single realm。如果配置了两个或多个realm，它将使用 AuthenticationStrategy 实例来协调尝试的发生。
+
+如果希望使用自定义 Authenticator 实现配置 SecurityManager，可以在 shiro.ini 中这样做，例如:
+
+```ini
+[main]
+...
+authenticator = com.foo.bar.CustomAuthenticator
+securityManager.authenticator = $authenticator
+```
+
+### 2.5-AuthenticationStrategy 认证策略
+
+当为一个应用程序配置两个或多个realm时，modularrealmauthink 依赖于内部 AuthenticationStrategy 组件来确定身份验证尝试成功或失败的条件。AuthenticationStrategy 是一个无状态组件，在身份验证尝试期间被查询4次(这4次交互所需的任何必要状态都将作为方法参数给出) : 
+
+1. 在任何realms被调用之前
+2. 在单个realm被调用之前
+3. 在单个realm被调用之后
+4. 在所有realms被调用之后
+
+此外，AuthenticationStrategy 还负责聚合每个成功的realm的结果，并将它们打包成单个 AuthenticationInfo 表示。这个最终的聚合 AuthenticationInfo 实例是 Authenticator 实例返回的内容，也是 Shiro 用来表示 Subject 的最终身份的内容。
+
+有三个认证策略可供选择：
+
+| `AuthenticationStrategy` **class** | **Description**                                              |
+| ---------------------------------- | ------------------------------------------------------------ |
+| AtLeastOneSuccessfulStrategy       | 如果一个(或多个)领域验证成功，则认为成功。如果一个都没有成功验证，则认证失败 |
+| FirstSuccessfulStrategy            | 只使用从第一个成功验证的realm返回的信息。其余的realm将被忽略。如果未通过身份验证，则认证失败 |
+| AllSuccessfulStrategy              | 有配置的realm都必须通过身份验证，才能认为整体认证是成功的。如果任何一个身份验证不成功，则认证失败 |
+
+**ModularRealmAuthenticator**默认采用的是**`AtLeastOneSuccessfulStrategy`** ，因为这是最常见的期望策略。当然也可以通过INI配置自定义策略：
+
+```ini
+[main]
+...
+authcStrategy = org.apache.shiro.authc.pam.FirstSuccessfulStrategy
+
+securityManager.authenticator.authenticationStrategy = $authcStrategy
+...
+```
+
+### 2.6-Realm Authentication Order  —— realm验证顺序
+
+**ModularRealmAuthenticator** 将以迭代的顺序与 Realm 实例进行交互。**ModularRealmAuthenticator**可以访问 SecurityManager 上配置的realm实例。当执行身份验证尝试时，它将遍历该集合，并且对于每个支持提交 AuthenticationToken 的 Realm，调用 Realm 的 getuthmatchationinfo 方法。
+
+#### 隐式排序
+
+当使用 Shiro 的 INI 配置格式时，将按照在 INI 文件中定义的顺序来查询realm。也就是说，对于下面的 shiro.ini 示例:
+
+```ini
+blahRealm = com.company.blah.Realm
+...
+fooRealm = com.company.foo.Realm
+...
+barRealm = com.company.another.Realm
+#可以省略引用，定义的每个realm都将自动添加，但在显式排序是不可省略
+securityManager.realms = $blahRealm, $fooRealm, $barRealm
+```
+
+SecurityManager 将使用这三个领域进行配置，在进行身份验证的过程中，blahRealm、 fooRealm 和 barRealm 将按照这个顺序进行调用。
+
+#### 显式排序
+
+需要注意的是，当显式配置 securityManager.realms 属性时，SecurityManager 上将只配置被引用的领域。这意味着可以在 INI 中定义5个领域，但是只有在领域属性引用了3个领域的情况下才会实际使用3个领域。这也是和隐式排序的主要区别。
+
+```ini
+blahRealm = com.company.blah.Realm
+...
+fooRealm = com.company.foo.Realm
+...
+barRealm = com.company.another.Realm
+#根据引用的顺序来执行
+securityManager.realms = $fooRealm, $barRealm, $blahRealm
+...
+```
 
 ## 3.Authorization（授权）
 
