@@ -284,6 +284,8 @@ securityManager.realms = $fooRealm, $barRealm, $blahRealm
 
 ## 3.Authorization（授权）
 
+理解shiro中权限（permission）：https://shiro.apache.org/permissions.html
+
 ### 3.1-简介
 
 授权实质上是访问控制——控制用户在应用程序中可以访问的内容，如资源、网页等。大多数用户通过使用角色和权限等概念来执行访问控制。也就是说，通常允许用户根据分配给他们的角色和/或权限做某些事情或不做某些事情。然后，应用程序可以基于对这些角色和权限的检查来控制所公开的功能。subjectAPI 允许我们非常容易地执行角色和权限检查。
@@ -440,7 +442,18 @@ openBankAccount();
 
 ### 3.6-Annotation-based Authorization  基于注释的授权
 
+在使用 Java 注释之前，需要在应用程序中启用 AOP 支持。有许多不同的 AOP 框架，所以不幸的是，没有标准的方法在应用程序中启用 AOP。这里不做过多展开。
 
+### 3.7-授权顺序
+
+架构图只突出显示了与授权相关的组件，每个数字代表授权操作中的一个步骤:
+
+![img](shiro%E7%AC%94%E8%AE%B0.images/ShiroAuthorizationSequence.png)
+
+1.  应用程序或框架代码调用任何 Subject hasRole * 、 checkRole * 、 isallowed * 或 checkPermission * 方法变量，并传递任何需要的权限或角色表示。
+2. Subject 实例，通常是一个 DelegatingSubject (或一个子类)通过调用 SecurityManager 中几乎相同的 hasRole * 、 checkRole * 、 isallowed * 或 checkPermission * 方法变体
+3.  SecurityManager 作为一个基本的“保护伞”组件，通过调用authorizer各自的 hasRole * 、 checkRole * 、 isPermitted * 或 checkPermission * 方法委托转发到其内部 org.apache.shiro.authz.Authorizer实例。authorizer实例在默认情况下是 ModularRealmAuthorizer 实例，它支持在任何授权操作期间协调一个或多个领域实例。
+4. 检查每个配置的 Realm 是否实现了相同的授权器接口。如果是，则调用 Realm 自己的 hasRole * 、 checkRole * 、 isallowed * 或 checkPermission * 方法。
 
 ## 4.Session Management（会话管理）
 
