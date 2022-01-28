@@ -200,7 +200,7 @@ currentUser.logout(); //删除所有的识别信息，并使他们的会话失�
 
 3. SecurityManager 作为一个基本的“保护伞”组件，接收令牌并通过调用 Authenticator.authenticate (token)简单地委托给它的内部 Authenticator 实例。基本上都是 ModularRealmAuthenticator 实例，它支持在身份验证期间协调一个或多个 Realm 实例。Modularrealmauthentator 实质上为 Apache Shiro 提供了一个 PAM- 风格的范例(在 PAM 术语中，每个realm都是一个“模块”)。
 
-4. 如果为应用程序配置了多个realm，ModularRealmAuthenticator 实例将利用其配置的 AuthenticationStrategy 启动多领域身份验证尝试。在调用领域进行身份验证之前、期间和之后，将调用 AuthenticationStrategy，以允许它对每个领域的结果做出反应。
+4. 如果为应用程序配置了多个realm，ModularRealmAuthenticator 实例将利用其配置的 AuthenticationStrategy 启动多领域身份验证尝试。在调用领域进行身份验证之前、期间和之后，将调用 AuthenticationStrategy，以允许它对每个realm的结果做出反应。
 
    ![image-20220109134320845](shiro%E7%AC%94%E8%AE%B0.images/image-20220109134320845.png)
 
