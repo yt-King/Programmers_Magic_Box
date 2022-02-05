@@ -24,7 +24,7 @@ public class 基数排序 {
         }
         return res;
     }
-
+    //从个位开始对每一位进行排序
     public static void radixSort(int[] arr, int l, int r, int bigit) {
         final int radix = 10;
         int i = 0, j = 0;

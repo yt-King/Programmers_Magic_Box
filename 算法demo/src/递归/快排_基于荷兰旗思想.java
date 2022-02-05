@@ -6,6 +6,7 @@ package 递归;
  * @function：
  */
 public class 快排_基于荷兰旗思想 {
+
     public static void swap(int arr[], int i, int j) {
         int c = arr[i];
         arr[i] = arr[j];
@@ -36,7 +37,6 @@ public class 快排_基于荷兰旗思想 {
         swap(arr, more, r);
         return new int[]{less + 1, more};
     }
-
 
     public static void main(String[] args) {
         int[] arr = {-4,0,7,4,9,-5,-1,0,-7,-1};
