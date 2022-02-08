@@ -10,7 +10,9 @@ import java.util.PriorityQueue;
  * @function：
  */
 public class K范围内有序的排序问题 {
+    //K范围内有序表示数组中任意一个数字的位子和排完序后的位子相差不超过k
     public static void sortArrDistanceLessK(int[] arr, int k) {
+        //优先队列的底层实现就是小根堆
         PriorityQueue<Integer> heap = new PriorityQueue<>(new comp());
         int index = 0;
         for (; index < Math.min(arr.length, k); index++) {
