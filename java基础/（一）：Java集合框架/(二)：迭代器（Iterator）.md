@@ -132,7 +132,7 @@ public static void main(String[] args) {
 
 foreach 语法主要用于数组和任何 Collection 对象，之所以能工作，是因为 Collection 继承了 Iterable 接口，Iterable 接口被 foreach 用来在序列中移动。因此，任何实现了 Iterable 的类，都可以将它用在 foreach 语句中。
 
-**foreach** 语句可以用于数组或其他任何的 Iterable，但是这并不意味着数组肯定也是一个 Iterable，而任何自动包装也不会发生：
+**foreach** 语句可以用于数组或其他任何的 Iterable，但是这并不意味着数组肯定也是一个 Iterable，而任何自动包装也不会发生(**对于数组，foreach 循环实际上还是用的普通的 for 循环。对于集合，foreach 循环实际上是用的 iterator 迭代器迭代。**)：
 
 ```java
 /**
@@ -159,4 +159,6 @@ foreach 语法主要用于数组和任何 Collection 对象，之所以能工作
 
 代码尝试将数组当做 Iterable 对象传递给 display() 方法，但是失败了，但是将数组转换成 List 对象传递给 display() 方法成功了。这说明**不存在任何从数组到 Iterable 的自动转换，必须手动转换**。
 
-补充一下，如果数组是基本数据类型，比如 int，那么将其转换为 List 集合然后将其当做 Iterable 参数传递的时候，虽然编译不会报错，但是结果是错误的，因为 Java 中泛型要求是对象类型，而基本数据类型不是对象，需要使用其包装类才行。
+**！！补充一下**，如果数组是基本数据类型，比如 int，那么将其转换为 List 集合然后将其当做 Iterable 参数传递的时候，虽然编译不会报错，但是结果是错误的，因为 Java 中泛型要求是对象类型，而基本数据类型不是对象，需要使用其包装类才行。
+
+补充文章->:https://juejin.cn/post/7023357955160408078
