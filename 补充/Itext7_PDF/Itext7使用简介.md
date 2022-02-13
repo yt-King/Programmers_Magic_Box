@@ -178,3 +178,7 @@ public void process(Table table, String line, PdfFont font, boolean isHeader) {
 效果图如下：
 
 ![image-20220212221431603](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212221431603.png)
+
+## 3.HTML 2 PDF
+
+IText这个只能生成静态文件，无法解析js，简介可以使用url或者转化代码成String串来生成，但是调用时发现有些地方有点想的太乐观；简单表格类可使用这个

@@ -7,7 +7,10 @@ import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.utils.PageRange;
+import com.itextpdf.kernel.utils.PdfSplitter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.*;
 
@@ -18,10 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.util.StringTokenizer;
 
@@ -123,5 +123,64 @@ public class ItextController {
         return "success";
     }
 
+    /**
+     * 功能描述:
+     * 按maxPageCount大小等分PDF
+     *
+     * @param
+     * @return java.lang.String
+     * @author yt
+     * @date 2022/2/13 14:15
+     */
+    @PostMapping("/PDFSplitter1")
+    public String PDFSplitter1() throws IOException {
+        final String ORIG = "C:\\Users\\应涛\\Desktop\\新建文件夹1\\培养方案.pdf";
 
+        final int maxPageCount = 5; // create a new PDF per maxPageCount pages from the original file
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(new File(ORIG)));
+        PdfSplitter pdfSplitter = new PdfSplitter(pdfDocument) {
+            int partNumber = 1;
+
+            @Override
+            protected PdfWriter getNextPdfWriter(PageRange documentPageRange) {
+                try {
+                    return new PdfWriter(PATH + "splitDocument_" + partNumber++ + ".pdf");
+                } catch (final FileNotFoundException ignored) {
+                    throw new RuntimeException();
+                }
+            }
+        };
+        //官方给出的示例，第二个参数是当另一个文档准备就绪时调用的事件侦听器。例如，可以在此侦听器中关闭此文档。
+        pdfSplitter.splitByPageCount(maxPageCount, (pdfDoc, pageRange) -> pdfDoc.close());
+        pdfDocument.close();
+        return "success";
+    }
+
+    /**
+     * 功能描述:
+     * 自定义选取片段大小的pdf
+     *
+     * @param
+     * @return java.lang.String
+     * @author yt
+     * @date 2022/2/13 14:15
+     */
+    @PostMapping("/PDFSplitter2")
+    public String PDFSplitter2() throws IOException {
+        final String ORIG = "C:\\Users\\应涛\\Desktop\\新建文件夹1\\培养方案.pdf";
+        //源文档
+        PdfReader pdfReader = new PdfReader(ORIG);
+        PdfDocument pdf = new PdfDocument(pdfReader);
+        //生成目标文档
+        PdfWriter pdfWriter = new PdfWriter(PATH + "/splitedDocument" + ".pdf");
+        PdfDocument outPdfDocument = new PdfDocument(pdfWriter);
+        //从页数第一页开始，
+        pdf.copyPagesTo(2, 3, outPdfDocument);
+        //关闭
+        outPdfDocument.close();
+        pdfWriter.close();
+        pdf.close();
+        pdfReader.close();
+        return "success";
+    }
 }
