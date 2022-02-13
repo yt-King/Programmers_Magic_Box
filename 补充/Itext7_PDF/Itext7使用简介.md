@@ -182,3 +182,4 @@ public void process(Table table, String line, PdfFont font, boolean isHeader) {
 ## 3.HTML 2 PDF
 
 IText这个只能生成静态文件，无法解析js，简介可以使用url或者转化代码成String串来生成，但是调用时发现有些地方有点想的太乐观；简单表格类可使用这个
+

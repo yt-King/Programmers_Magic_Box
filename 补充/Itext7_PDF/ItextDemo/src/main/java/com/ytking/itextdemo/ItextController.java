@@ -1,15 +1,13 @@
 package com.ytking.itextdemo;
 
-
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.utils.PageRange;
+import com.itextpdf.kernel.utils.PdfMerger;
 import com.itextpdf.kernel.utils.PdfSplitter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.*;
@@ -144,7 +142,7 @@ public class ItextController {
             @Override
             protected PdfWriter getNextPdfWriter(PageRange documentPageRange) {
                 try {
-                    return new PdfWriter(PATH + "splitDocument_" + partNumber++ + ".pdf");
+                    return new PdfWriter(PATH + "/splitDocument_" + partNumber++ + ".pdf");
                 } catch (final FileNotFoundException ignored) {
                     throw new RuntimeException();
                 }
@@ -183,4 +181,59 @@ public class ItextController {
         pdfReader.close();
         return "success";
     }
+
+    /**
+     * 功能描述:
+     * pdf合并
+     *
+     * @param
+     * @return java.lang.String
+     * @author yt
+     * @date 2022/2/13 16:07
+     */
+    @PostMapping("/PdfMerge")
+    public String PdfMerge() throws IOException {
+        final String FILE1 = "要合并的文件1路径";
+        final String FILE2 = "要合并的文件2路径";
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(FILE1), new PdfWriter(PATH + "/merged.pdf"));
+        PdfDocument pdfDocument2 = new PdfDocument(new PdfReader(FILE2));
+        //要生成的文件
+        PdfMerger merger = new PdfMerger(pdfDocument);
+        //要合并的文件，第二个参数是起始页，第三个参数是结束页，我这样写就是全部合并，也可以选择合并一部分
+        merger.merge(pdfDocument2, 1, pdfDocument2.getNumberOfPages());
+        pdfDocument2.close();
+        pdfDocument.close();
+        return "success";
+    }
+
+    /**
+     * 功能描述:
+     * pdf旋转
+     *
+     * @param
+     * @return java.lang.String
+     * @author yt
+     * @date 2022/2/13 16:07
+     */
+    @PostMapping("/PDFRotator")
+    public String PDFRotator() throws IOException {
+        final int ROTATION_DEGREES = 90; //顺时针旋转角度
+        final String ORIG = "C:\\Users\\应涛\\Desktop\\新建文件夹1\\培养方案.pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(ORIG), new PdfWriter(PATH + "/Rotated.pdf"));
+
+        for (int p = 1; p <= pdfDocument.getNumberOfPages(); p++) {
+            PdfPage page = pdfDocument.getPage(p);
+            int rotate = page.getRotation();
+            if (rotate == 0) {
+                page.setRotation(ROTATION_DEGREES);
+            } else {
+                page.setRotation((rotate + ROTATION_DEGREES) % 360);
+            }
+        }
+
+        pdfDocument.close();
+        return "success";
+    }
+
 }
