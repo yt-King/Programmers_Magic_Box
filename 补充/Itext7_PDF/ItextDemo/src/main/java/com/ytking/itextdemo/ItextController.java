@@ -1,5 +1,8 @@
 package com.ytking.itextdemo;
 
+import com.alibaba.fastjson.JSON;
+import com.itextpdf.forms.PdfAcroForm;
+import com.itextpdf.forms.fields.PdfFormField;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.font.PdfFont;
@@ -10,17 +13,18 @@ import com.itextpdf.kernel.utils.PageRange;
 import com.itextpdf.kernel.utils.PdfMerger;
 import com.itextpdf.kernel.utils.PdfSplitter;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.Style;
 import com.itextpdf.layout.element.*;
 
+import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import static com.ytking.itextdemo.PathUtils.getAbsolutePathWithProject;
@@ -35,13 +39,63 @@ import static com.ytking.itextdemo.PathUtils.getAbsolutePathWithProject;
 public class ItextController {
     //文件存放路径--PATH = E:\banyun\javaInterview\补充\Itext7_PDF\ItextDemo
     final String PATH = getAbsolutePathWithProject();
-
     //使用系统本地字体，可以解决生成的pdf中无法显示中文问题，本处字体为宋体
     //在创建字体时直接使用即可解决中文问题
     PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,1", PdfEncodings.IDENTITY_H);
+//    PdfFont sysFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H", true);
 
     public ItextController() throws IOException {
     }
+
+    @PostMapping("/test1")
+    public String test1() throws IOException {
+        try {
+            //Initialize PDF document
+            PdfReader reader = new PdfReader("C:\\Users\\应涛\\Desktop\\mode2.pdf");
+            PdfWriter writer = new PdfWriter("C:\\Users\\应涛\\Desktop\\mode1.pdf");
+            PdfDocument pdf = new PdfDocument(reader, writer);
+            PdfAcroForm form = PdfAcroForm.getAcroForm(pdf, true);
+            Map<String, PdfFormField> fields = form.getFormFields();
+
+            //处理中文问题
+            String[] str = {
+                    "社会主义核心价值观",
+                    "富强 民主 文明 和谐",
+                    "自由 平等 公正 法制",
+                    "爱国 敬业 诚信 友善"
+            };
+//            int i = 0;
+//            java.util.Iterator<String> it = fields.keySet().iterator();
+//            while (it.hasNext()) {
+//                //获取文本域名称
+//                String name = it.next().toString();
+//                System.out.println("name = " + name);
+//                //填充文本域
+////                fields.get(name).setValue(str[i++]).setFont(sysFont).setFontSize(12);
+//            }
+            EnterpriceRegDao entity = new EnterpriceRegDao();
+            entity.setEnterpriceName("ha");
+            entity.setRegTime("2021-1-2");
+            entity.setRegType("好的");
+            entity.setResourceFrom("芜湖");
+            Map<String, String> map = JSON.parseObject(JSON.toJSONString(entity), Map.class);
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                fields.get(entry.getKey()).setValue(entry.getValue()).setFont(sysFont).setFontSize(12);
+                System.out.println("entry.getValue() = " + entry.getValue());
+                System.out.println("entry.getKey() = " + entry.getKey());
+            }
+            form.flattenFields();//设置表单域不可编辑
+            pdf.close();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "success";
+    }
+
 
     /**
      * 功能描述:
