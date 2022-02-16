@@ -17,22 +17,22 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation group: 'com.alibaba', name: 'fastjson', version: '1.2.54'
     //包含低层次常用的基础的函数------------------------------------------
-    implementation group: 'com.itextpdf', name: 'kernel', version: '7.2.0'
-    implementation group: 'com.itextpdf', name: 'io', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'kernel', version: '7.0.3'
+    implementation group: 'com.itextpdf', name: 'io', version: '7.0.3'
     //包含高层次的函数
-    implementation group: 'com.itextpdf', name: 'layout', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'layout', version: '7.0.3'
     //有关AcorForms操作需要的函数库
-    implementation group: 'com.itextpdf', name: 'forms', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'forms', version: '7.0.3'
     //有关PDF/A（电子文档标准）的相关操作
-    implementation group: 'com.itextpdf', name: 'pdfa', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'pdfa', version: '7.0.3'
     //----------------------以上为常用jar包---------------------------
     //条形码相关
-    implementation group: 'com.itextpdf', name: 'barcodes', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'barcodes', version: '7.0.3'
     //电子签名
-    implementation group: 'com.itextpdf', name: 'sign', version: '7.2.0'
+    implementation group: 'com.itextpdf', name: 'sign', version: '7.0.3'
     implementation 'org.projectlombok:lombok:1.18.18'
     //字体相关，主要解决中文不显示的问题
-    testImplementation group: 'com.itextpdf', name: 'font-asian', version: '7.2.0'
+    testImplementation group: 'com.itextpdf', name: 'font-asian', version: '7.0.3'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
