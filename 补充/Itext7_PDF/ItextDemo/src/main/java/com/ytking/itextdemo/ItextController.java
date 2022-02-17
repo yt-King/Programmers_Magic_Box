@@ -43,7 +43,22 @@ public class ItextController {
 
     public ItextController() throws IOException {
     }
-
+    /**输入示例：
+     {
+     "regTime":"2018-8-17",
+     "regType":"有限责任公司（非自然人投资或控股的法人独资）",
+     "resourceFrom":"无",
+     "regCapital":"35000.0万人名币",
+     "belongsTo":"制造业",
+     "enterpriceScale":"2亿元以上~4亿元（含）",
+     "adminRegion":"省和自治区/浙江省/湖州市",
+     "postCode":"313216",
+     "collectMethod":"check",
+     "isListed":"n",
+     "isHighZones":"y",
+     "highZonesName":"湖州莫干山高新技术产业开发区"
+     }
+     */
     @PostMapping("/test1")
     public String test1(@RequestBody EnterpriceRegDao entity) throws IOException {
         PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
