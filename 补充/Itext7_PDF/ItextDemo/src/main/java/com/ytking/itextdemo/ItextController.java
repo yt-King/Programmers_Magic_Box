@@ -45,7 +45,7 @@ public class ItextController {
     }
 
     @PostMapping("/test1")
-    public String test1() throws IOException {
+    public String test1(@RequestBody EnterpriceRegDao entity) throws IOException {
         PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
         try {
             //Initialize PDF document
@@ -54,17 +54,16 @@ public class ItextController {
             PdfDocument pdf = new PdfDocument(reader, writer);
             PdfAcroForm form = PdfAcroForm.getAcroForm(pdf, true);
             Map<String, PdfFormField> fields = form.getFormFields();
-
-            EnterpriceRegDao entity = new EnterpriceRegDao();
-            //测试数据
-            entity.setEnterpriceName("埃里\n巴巴");
-            entity.setRegTime("2021-1-2");
-            entity.setRegType("好啊实打实的大三等我啊我的钱权威的权威的阿萨的");
-            entity.setResourceFrom("芜湖d啊实打实大三大苏打实打实撒旦阿萨撒旦");
-            entity.setDirectorOfTax("state");
-            entity.setCollectMethod("check");
-            entity.setIsHighZones("n");
-            entity.setIsListed("y");
+//            EnterpriceRegDao entity = new EnterpriceRegDao();
+//            //测试数据
+//            entity.setEnterpriceName("埃里\n巴巴");
+//            entity.setRegTime("2021-1-2");
+//            entity.setRegType("好啊实打实的大三等我啊我的钱权威的权威的阿萨的");
+//            entity.setResourceFrom("芜湖d啊实打实大三大苏打实打实撒旦阿萨撒旦");
+//            entity.setDirectorOfTax("state");
+//            entity.setCollectMethod("check");
+//            entity.setIsHighZones("n");
+//            entity.setIsListed("y");
             Map<String, String> map = JSON.parseObject(JSON.toJSONString(entity), Map.class);
             //填充文本域
             for (Map.Entry<String, String> entry : map.entrySet()) {
