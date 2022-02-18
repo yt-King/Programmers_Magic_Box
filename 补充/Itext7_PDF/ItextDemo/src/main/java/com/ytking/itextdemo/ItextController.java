@@ -47,6 +47,15 @@ public class ItextController {
     public ItextController() throws IOException {
     }
 
+    /**
+     * 功能描述:
+     * 复杂表单生成
+     *
+     * @param entity
+     * @return java.io.File
+     * @author yt
+     * @date 2022/2/18 23:47
+     */
     @PostMapping("/table")
     public File table(@RequestBody DevActivityInfoDao entity) throws IOException {
         File file = entity.ToPDF();
