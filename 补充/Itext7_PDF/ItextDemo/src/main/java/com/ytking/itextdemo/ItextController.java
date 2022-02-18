@@ -48,10 +48,9 @@ public class ItextController {
     }
 
     @PostMapping("/table")
-    public String table(@RequestBody DevActivityInfoDao entity) throws IOException {
-        System.out.println(entity.getActivityId());
-      entity.ToPDF();
-        return "success";
+    public File table(@RequestBody DevActivityInfoDao entity) throws IOException {
+        File file = entity.ToPDF();
+        return file;
     }
 
     /**

@@ -16,6 +16,7 @@ import com.itextpdf.layout.property.VerticalAlignment;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -121,7 +122,7 @@ public class DevActivityInfoDao {
     String results = "";
 
 
-    public void ToPDF() throws IOException {
+    public File ToPDF() throws IOException {
         String PATH = getAbsolutePathWithProject();
         PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
         //创建基础模块
@@ -192,6 +193,8 @@ public class DevActivityInfoDao {
         document.add(table);
         // 关闭文档
         document.close();
+        File file = new File(PATH + "/test.pdf");
+        return file;
     }
 
     public void setActivityId(String activityId) {
