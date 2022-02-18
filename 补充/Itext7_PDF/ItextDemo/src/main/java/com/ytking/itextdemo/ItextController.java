@@ -43,92 +43,14 @@ public class ItextController {
     //文件存放路径--PATH = E:\banyun\javaInterview\补充\Itext7_PDF\ItextDemo
     final String PATH = getAbsolutePathWithProject();
     //    PdfFont sysFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H", true);
-    final String testString = "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
-            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字";
 
     public ItextController() throws IOException {
     }
 
     @PostMapping("/table")
-    public String table() throws IOException {
-        PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
-        //创建基础模块
-        PdfWriter writer = new PdfWriter(PATH + "/test.pdf");
-        PdfDocument pdf = new PdfDocument(writer);
-        //生成操作对象
-        Document document = new Document(pdf, PageSize.A4);//设置页面大小，rotate（）表示页面横向
-        document.setMargins(20, 20, 20, 20);//设置页边距
-        // 添加表格，7列
-        Table table = new Table(new UnitValue[]{
-                UnitValue.createPercentValue((float) 1.1),
-                UnitValue.createPercentValue((float) 1),
-                UnitValue.createPercentValue((float) 1.2),
-                UnitValue.createPercentValue((float) 1),
-                UnitValue.createPercentValue((float) 0.9),
-                UnitValue.createPercentValue((float) 1),
-                UnitValue.createPercentValue((float) 1)
-        })//每个数定义一个列的相对宽度,用float数组定义不生效！！需要使用UnitValue。
-                .setFont(sysFont)//设置全局字体
-                .setWidthPercent(100)
-                .setTextAlignment(TextAlignment.CENTER);//设置全局文字左右居中
-//        table.setWidth(UnitValue.createPercentValue(100));//表的宽度相对于页面的可用宽度，在这种情况下，表将使用100% 的页面宽度，减去页边距。
-        //第一行
-        table.addCell(new Cell().add(new Paragraph("活动编号")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 6).add(new Paragraph("xxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        //第二行
-        table.addCell(new Cell().add(new Paragraph("研发活动名称")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 3).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("起止时间")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        //第三行
-        table.addCell(new Cell().add(new Paragraph("技术领域")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 6).add(new Paragraph("xxxxxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        //第四行
-        table.addCell(new Cell().add(new Paragraph("技术来源")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 2).add(new Paragraph("知识产权（编号）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        //第五行
-        table.addCell(new Cell(3, 1).add(new Paragraph("研发经费总预算（万元）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(3, 1).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(3, 1).add(new Paragraph("研发经费近三年总支出（万元）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(3, 1).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(3, 1).add(new Paragraph("其中")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("1")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("2")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("3")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("4")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("5")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell().add(new Paragraph("6")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        //第一段
-        table.addCell(new Cell().add(new Paragraph("目的及组织实施方式(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
-                .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .setTextAlignment(TextAlignment.LEFT));
-        //第二段
-        table.addCell(new Cell().add(new Paragraph("核心技术及创新点(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
-                .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .setTextAlignment(TextAlignment.LEFT));
-        ;
-        //第三段
-        table.addCell(new Cell().add(new Paragraph("取得的阶段性成果(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
-        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
-                .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .setTextAlignment(TextAlignment.LEFT));
-        //添加table到pdf
-        document.add(table);
-        // 关闭文档
-        document.close();
+    public String table(@RequestBody DevActivityInfoDao entity) throws IOException {
+        System.out.println(entity.getActivityId());
+      entity.ToPDF();
         return "success";
     }
 
