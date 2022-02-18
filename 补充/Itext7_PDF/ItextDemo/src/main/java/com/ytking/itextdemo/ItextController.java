@@ -35,14 +35,13 @@ import static com.ytking.itextdemo.PathUtils.getAbsolutePathWithProject;
 /**
  * @author 应涛
  * @date 2022/2/11
- * @function：
+ * @function： Itext操作pdf示例
  */
 @RestController
 @RequestMapping("/itex")
 public class ItextController {
     //文件存放路径--PATH = E:\banyun\javaInterview\补充\Itext7_PDF\ItextDemo
     final String PATH = getAbsolutePathWithProject();
-    //    PdfFont sysFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H", true);
 
     public ItextController() throws IOException {
     }
