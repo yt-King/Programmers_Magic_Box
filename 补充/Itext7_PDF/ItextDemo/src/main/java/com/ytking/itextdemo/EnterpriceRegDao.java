@@ -55,12 +55,12 @@ public class EnterpriceRegDao {
     String taxCode;
     /**
      * 企业所得税主管税务机关
-     * state / local
+     * 1 / 2
      */
     String directorOfTax;
     /**
      * 企业所得税征收方式
-     * check / appraise
+     * 1 / 2
      */
     String collectMethod;
     /**

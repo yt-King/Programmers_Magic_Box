@@ -16,6 +16,11 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.Style;
 import com.itextpdf.layout.element.*;
 
+import com.itextpdf.layout.property.HorizontalAlignment;
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
+import com.itextpdf.layout.property.VerticalAlignment;
+import lombok.With;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,72 +42,95 @@ import static com.ytking.itextdemo.PathUtils.getAbsolutePathWithProject;
 public class ItextController {
     //文件存放路径--PATH = E:\banyun\javaInterview\补充\Itext7_PDF\ItextDemo
     final String PATH = getAbsolutePathWithProject();
-    //使用系统本地字体，可以解决生成的pdf中无法显示中文问题，本处字体为宋体
-    //在创建字体时直接使用即可解决中文问题
-//    PdfFont sysFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H", true);
+    //    PdfFont sysFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H", true);
+    final String testString = "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字" +
+            "这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字这是测试400字";
 
     public ItextController() throws IOException {
     }
-    /**输入示例：
-     {
-     "regTime":"2018-8-17",
-     "regType":"有限责任公司（非自然人投资或控股的法人独资）",
-     "resourceFrom":"无",
-     "regCapital":"35000.0万人名币",
-     "belongsTo":"制造业",
-     "enterpriceScale":"2亿元以上~4亿元（含）",
-     "adminRegion":"省和自治区/浙江省/湖州市",
-     "postCode":"313216",
-     "collectMethod":"check",
-     "isListed":"n",
-     "isHighZones":"y",
-     "highZonesName":"湖州莫干山高新技术产业开发区"
-     }
-     */
-    @PostMapping("/test1")
-    public String test1(@RequestBody EnterpriceRegDao entity) throws IOException {
-        PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
-        try {
-            //Initialize PDF document
-            PdfReader reader = new PdfReader("C:\\Users\\应涛\\Desktop\\mode.pdf");
-            PdfWriter writer = new PdfWriter("C:\\Users\\应涛\\Desktop\\mode1.pdf");
-            PdfDocument pdf = new PdfDocument(reader, writer);
-            PdfAcroForm form = PdfAcroForm.getAcroForm(pdf, true);
-            Map<String, PdfFormField> fields = form.getFormFields();
-//            EnterpriceRegDao entity = new EnterpriceRegDao();
-//            //测试数据
-//            entity.setEnterpriceName("埃里\n巴巴");
-//            entity.setRegTime("2021-1-2");
-//            entity.setRegType("好啊实打实的大三等我啊我的钱权威的权威的阿萨的");
-//            entity.setResourceFrom("芜湖d啊实打实大三大苏打实打实撒旦阿萨撒旦");
-//            entity.setDirectorOfTax("state");
-//            entity.setCollectMethod("check");
-//            entity.setIsHighZones("n");
-//            entity.setIsListed("y");
-            Map<String, String> map = JSON.parseObject(JSON.toJSONString(entity), Map.class);
-            //填充文本域
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                System.out.println("fields.get(entry.getKey()) = " + fields.get(entry.getKey()));
-                if(null != fields.get(entry.getKey())){
-                    fields.get(entry.getKey()).setFont(sysFont).setValue(entry.getValue()).setFontSize(11);
-                }
-                float strWidth = sysFont.getWidth(entry.getValue(), 12);
-                System.out.println("entry.getValue() = " + entry.getValue()+" strWidth= "+strWidth);
-                System.out.println("entry.getKey() = " + entry.getKey());
-            }
-            //返回值：[158.709 623.76 287.589 659.4 ]左上角x，左上角y，宽，高。
-            PdfArray position = fields.get("fill_7").getWidgets().get(0).getRectangle();
-            form.flattenFields();//设置表单域不可编辑
-            pdf.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    @PostMapping("/table")
+    public String table() throws IOException {
+        PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
+        //创建基础模块
+        PdfWriter writer = new PdfWriter(PATH + "/test.pdf");
+        PdfDocument pdf = new PdfDocument(writer);
+        //生成操作对象
+        Document document = new Document(pdf, PageSize.A4);//设置页面大小，rotate（）表示页面横向
+        document.setMargins(20, 20, 20, 20);//设置页边距
+        // 添加表格，7列
+        Table table = new Table(new UnitValue[]{
+                UnitValue.createPercentValue((float) 1.1),
+                UnitValue.createPercentValue((float) 1),
+                UnitValue.createPercentValue((float) 1.2),
+                UnitValue.createPercentValue((float) 1),
+                UnitValue.createPercentValue((float) 0.9),
+                UnitValue.createPercentValue((float) 1),
+                UnitValue.createPercentValue((float) 1)
+        })//每个数定义一个列的相对宽度,用float数组定义不生效！！需要使用UnitValue。
+                .setFont(sysFont)//设置全局字体
+                .setWidthPercent(100)
+                .setTextAlignment(TextAlignment.CENTER);//设置全局文字左右居中
+//        table.setWidth(UnitValue.createPercentValue(100));//表的宽度相对于页面的可用宽度，在这种情况下，表将使用100% 的页面宽度，减去页边距。
+        //第一行
+        table.addCell(new Cell().add(new Paragraph("活动编号")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 6).add(new Paragraph("xxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        //第二行
+        table.addCell(new Cell().add(new Paragraph("研发活动名称")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 3).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("起止时间")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        //第三行
+        table.addCell(new Cell().add(new Paragraph("技术领域")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 6).add(new Paragraph("xxxxxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        //第四行
+        table.addCell(new Cell().add(new Paragraph("技术来源")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 2).add(new Paragraph("知识产权（编号）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 2).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        //第五行
+        table.addCell(new Cell(3, 1).add(new Paragraph("研发经费总预算（万元）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(3, 1).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(3, 1).add(new Paragraph("研发经费近三年总支出（万元）")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(3, 1).add(new Paragraph("xxxxx")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(3, 1).add(new Paragraph("其中")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("1")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("2")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("3")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("4")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("5")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell().add(new Paragraph("6")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        //第一段
+        table.addCell(new Cell().add(new Paragraph("目的及组织实施方式(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setTextAlignment(TextAlignment.LEFT));
+        //第二段
+        table.addCell(new Cell().add(new Paragraph("核心技术及创新点(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setTextAlignment(TextAlignment.LEFT));
+        ;
+        //第三段
+        table.addCell(new Cell().add(new Paragraph("取得的阶段性成果(限400字)")).setVerticalAlignment(VerticalAlignment.MIDDLE));
+        table.addCell(new Cell(1, 6).add(new Paragraph(testString))
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setTextAlignment(TextAlignment.LEFT));
+        //添加table到pdf
+        document.add(table);
+        // 关闭文档
+        document.close();
         return "success";
     }
-
 
     /**
      * 功能描述:
@@ -295,8 +323,85 @@ public class ItextController {
                 page.setRotation((rotate + ROTATION_DEGREES) % 360);
             }
         }
-
         pdfDocument.close();
+        return "success";
+    }
+
+    /**
+     * 输入示例：
+     * {
+     * "regTime":"2018-8-17",
+     * "regType":"有限责任公司（非自然人投资或控股的法人独资）",
+     * "resourceFrom":"无",
+     * "regCapital":"35000.0万人名币",
+     * "belongsTo":"制造业",
+     * "enterpriceScale":"2亿元以上~4亿元（含）",
+     * "adminRegion":"省和自治区/浙江省/湖州市",
+     * "postCode":"313216",
+     * "collectMethod":"check",
+     * "enterpricerName":"xx",
+     * "enterpricerTel":"88884888",
+     * "enterpricerMobile":"1666666",
+     * "isListed":"n",
+     * "isHighZones":"y",
+     * "highZonesName":"湖州莫干山高新技术产业开发区"
+     * }
+     */
+    @PostMapping("/test1")//交互式表单域填充测试
+    public String test1(@RequestBody EnterpriceRegDao entity) throws IOException {
+        int fontsSize = 11;//字体大小
+        PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
+        try {
+            //Initialize PDF document
+            PdfReader reader = new PdfReader(PATH + "/mode.pdf");
+            PdfWriter writer = new PdfWriter(PATH + "/mode1.pdf");
+            PdfDocument pdf = new PdfDocument(reader, writer);
+            //表单域操作对象
+            PdfAcroForm form = PdfAcroForm.getAcroForm(pdf, true);
+            Map<String, PdfFormField> fields = form.getFormFields();
+            //实体类转换为map后进行填值
+            Map<String, String> map = JSON.parseObject(JSON.toJSONString(entity), Map.class);
+            //填充文本域
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                if (null != fields.get(entry.getKey())) {
+                    //获取输入文字长度
+                    double fontLength = sysFont.getWidth(entry.getValue(), fontsSize);
+                    //获取文本域大小,计算长和宽
+                    PdfArray position = fields.get(entry.getKey()).getWidgets().get(0).getRectangle();
+                    //返回值：[158.709 623.76 287.589 659.4 ]以页面左下角为坐标原点，参数依次为左下角x，左下角y，右上角x，右上角y。
+                    double width = Double.parseDouble(position.get(3).toString()) - Float.parseFloat(position.get(1).toString());
+                    double length = Double.parseDouble(position.get(2).toString()) - Float.parseFloat(position.get(0).toString());
+                    if (fontLength < length - 3) {//一行可以写下直接写入
+                        fields.get(entry.getKey()).setFont(sysFont).setValue(entry.getValue()).setFontSize(fontsSize);
+                    } else {
+                        double times = Math.ceil(fontLength / length);
+                        int tempSize = fontsSize;
+                        while ((tempSize + 4.1) * times > width) {
+                            tempSize--;
+                            fontLength = sysFont.getWidth(entry.getValue(), tempSize);
+                            times = Math.ceil(fontLength / length);
+                        }
+                        StringBuilder value = new StringBuilder(entry.getValue());
+                        int size = value.length();
+                        int loc = (int) (size * (length / fontLength));
+                        for (int i = 0; i < times - 1; i++) {
+                            value.insert(loc, "\n");
+                            loc = loc * 2;
+                        }
+                        fields.get(entry.getKey()).setFont(sysFont).setValue(value.toString()).setFontSize(tempSize);
+                        System.out.println("value = " + value + "  " + loc + " " + size);
+                    }
+                    System.out.println("fontLength = " + fontLength + "  " + width + "   " + length + "   " + entry.getValue());
+                }
+            }
+            form.flattenFields();//设置表单域不可编辑
+            pdf.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "success";
     }
 
