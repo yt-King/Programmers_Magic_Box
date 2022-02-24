@@ -18,9 +18,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 
 import static com.ytking.itextdemo.PathUtils.getAbsolutePathWithProject;
 
@@ -121,9 +120,10 @@ public class DevActivityInfoDao {
      */
     String results = "";
 
+    String PATH = getAbsolutePathWithProject();
 
-    public File ToPDF() throws IOException {
-        String PATH = getAbsolutePathWithProject();
+    public void ToPDF() throws IOException {
+
         PdfFont sysFont = PdfFontFactory.createFont("C:/Windows/Fonts/simsun.ttc,0", PdfEncodings.IDENTITY_H);
         //创建基础模块
         PdfWriter writer = new PdfWriter(PATH + "/test.pdf");
@@ -193,8 +193,37 @@ public class DevActivityInfoDao {
         document.add(table);
         // 关闭文档
         document.close();
+    }
+
+    public boolean download(HttpServletResponse res) throws IOException {
         File file = new File(PATH + "/test.pdf");
-        return file;
+        String fileName = "resylt.pdf";
+        res.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+        byte[] buff = new byte[1024];
+        BufferedInputStream bis = null;
+        OutputStream os = null;
+        try {
+            os = res.getOutputStream();
+            bis = new BufferedInputStream(new FileInputStream(file));
+            int i = bis.read(buff);
+            while (i != -1) {
+                os.write(buff, 0, buff.length);
+                os.flush();
+                i = bis.read(buff);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (bis != null) {
+                try {
+                    bis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        System.out.println("success");
+        return false;
     }
 
     public void setActivityId(String activityId) {

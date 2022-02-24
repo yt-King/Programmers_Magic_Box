@@ -24,6 +24,7 @@ import lombok.With;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.util.Iterator;
@@ -56,9 +57,10 @@ public class ItextController {
      * @date 2022/2/18 23:47
      */
     @PostMapping("/table")
-    public File table(@RequestBody DevActivityInfoDao entity) throws IOException {
-        File file = entity.ToPDF();
-        return file;
+    public boolean table(@RequestBody DevActivityInfoDao entity, HttpServletResponse res) throws IOException {
+        entity.ToPDF();
+        entity.download(res);
+        return true;
     }
 
     /**
