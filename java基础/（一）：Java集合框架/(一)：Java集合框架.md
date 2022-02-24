@@ -2,6 +2,8 @@
 
 早在 Java 2 中之前，Java 就提供了特设类。比如：Dictionary, Vector, Stack, 和 Properties 这些类用来存储和操作对象组。但是使用方式有很大的不同。虽然这些类都非常有用，但是它们缺少一个核心的，统一的主题。由于这个原因，使用 Vector 类的方式和使用 Properties 类的方式有着很大不同。
 
+## [Java集合使用注意事项总结](https://javaguide.cn/java/collection/java%E9%9B%86%E5%90%88%E4%BD%BF%E7%94%A8%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/#)
+
 ## 1-集合框架设计要求目标：
 
 - 该框架必须是高性能的。基本集合（动态数组，链表，树，哈希表）的实现也必须是高效的。
