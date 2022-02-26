@@ -62,4 +62,10 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 
 ## 7-Itext的使用（pdf操作）                     (2022-2-14更新)
 
+# 链接
+
+[Java8 新特性](https://mp.weixin.qq.com/s/ojyl7B6PiHaTWADqmUq2rw)
+
+[记录一次前后端分离完成cas单点登录的过程](https://juejin.cn/post/7068922646448046094)
+
 # 算法demo--一些算法的例子
