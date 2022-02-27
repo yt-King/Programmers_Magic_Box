@@ -1,5 +1,9 @@
 # 聊聊Synchronized和Lock
 
+## 相关链接：
+
+[Java锁与线程的那些事](https://tech.youzan.com/javasuo-yu-xian-cheng-de-na-xie-shi/)
+
 # 1.Synchronized
 
 参考：[synchronized原理及其应用](https://juejin.cn/post/6844904114061590535#heading-5)
@@ -90,9 +94,19 @@ synchronzied 在使用时需要关联一个对象，而这个对象就是 monito
 2. 如果你已经是这个monitor的owner了，你再次进入，就会把进入数+1.
 3. 同理，当他执行完**monitorexit**，对应的进入数就-1，直到为0，才可以被其他线程持有。
 
+### 1.2.6-总结
+
+`synchronized` **同步语句块**的实现使用的是 `monitorenter` 和 `monitorexit` 指令，其中 `monitorenter` 指令指向同步代码块的开始位置，`monitorexit` 指令则指明同步代码块的结束位置。
+
+`synchronized` 修饰的方法并没有 `monitorenter` 指令和 `monitorexit` 指令，取得代之的确实是 `ACC_SYNCHRONIZED` 标识，该标识指明了该方法是一个同步方法。
+
+**不过两者的本质都是对对象监视器 monitor 的获取。**
+
 ## 1.3-锁的升级过程
 
 synchronized 在开始的时候是依靠操作系统的互斥锁来实现的，是个重量级操作，为了减少获得锁和释放锁带来的性能消耗，在 JDK 1.6中，引入了偏向锁和轻量级锁。锁一共有4中状态：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几种状态会随着竞争情况逐渐升级，但不能降级，目的是为了提高锁和释放锁的效率。
+
+![image-20220227142938482](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220227142938482.png)
 
 ### 1.3.1-偏向锁
 
