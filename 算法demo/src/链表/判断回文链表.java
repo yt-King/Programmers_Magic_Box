@@ -3,10 +3,11 @@ package 链表;
 /**
  * @author 应涛
  * @date 2022/2/10
- * @function：
+ * 不考虑空间的话直接把链表压栈，然后从头开始比对
+ * 不使用额外空间的话考虑快慢指针，然后逆转后半段链表进行比对
  */
 public class 判断回文链表 {
-    //链表结构
+    //链表结构,给定的是一个单链表
     static class ListNode {
         int val;
         ListNode next;
@@ -23,7 +24,7 @@ public class 判断回文链表 {
         }
 
         // 找到前半部分链表的尾节点并反转后半部分链表
-        ListNode firstHalfEnd = endOfFirstHalf(head);
+        ListNode firstHalfEnd = endOfFirstHalf(head); //中点位置（靠前）
         ListNode secondHalfStart = reverseList(firstHalfEnd.next);
 
         // 判断是否回文
