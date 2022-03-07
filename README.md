@@ -42,6 +42,8 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 
 ## Builder（生成器）——对象创建型模式                                  （2022/3/5更新）
 
+## Factory Method（工厂方法）——对象创建型模式       （2022/3/7更新）
+
 # tips：补充（写得很杂，想到啥写啥）
 
 ## 0-序列化接口
@@ -75,5 +77,7 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 [Java8 新特性](https://mp.weixin.qq.com/s/ojyl7B6PiHaTWADqmUq2rw)
 
 [记录一次前后端分离完成cas单点登录的过程](https://juejin.cn/post/7068922646448046094)
+
+[幂等设计](https://mp.weixin.qq.com/s?__biz=Mzg3NzU5NTIwNg==&mid=2247497427&idx=1&sn=2ed160c9917ad989eee1ac60d6122855&chksm=cf2229faf855a0ecf5eb34c7335acdf6420426490ee99fc2b602d54ff4ffcecfdab24eeab0a3&token=529683793&lang=zh_CN#rd)
 
 # 算法demo--一些算法的例子
