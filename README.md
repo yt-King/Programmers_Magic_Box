@@ -72,7 +72,7 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 
 ## 7-Itext的使用（pdf操作）                     (2022-2-14更新)
 
-## 8-数据库缓存一致性研究                       (2022-3-10更新)
+## 8-数据库缓存一致性研究                       (2022-3-11更新)
 
 # 链接
 
@@ -81,5 +81,7 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 [记录一次前后端分离完成cas单点登录的过程](https://juejin.cn/post/7068922646448046094)
 
 [幂等设计](https://mp.weixin.qq.com/s?__biz=Mzg3NzU5NTIwNg==&mid=2247497427&idx=1&sn=2ed160c9917ad989eee1ac60d6122855&chksm=cf2229faf855a0ecf5eb34c7335acdf6420426490ee99fc2b602d54ff4ffcecfdab24eeab0a3&token=529683793&lang=zh_CN#rd)
+
+[聊聊MySQL主从](https://juejin.cn/post/7070290856967667742)
 
 # 算法demo--一些算法的例子
