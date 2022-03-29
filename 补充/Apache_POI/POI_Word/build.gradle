@@ -1,0 +1,28 @@
+plugins {
+    id 'org.springframework.boot' version '2.6.5'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation group: 'org.jsoup', name: 'jsoup', version: '1.13.1'
+    implementation group: 'cn.afterturn', name: 'easypoi-spring-boot-starter', version: '4.2.0'
+    implementation group: 'org.docx4j', name: 'docx4j', version: '3.3.6'
+    implementation group: 'com.deepoove', name: 'poi-tl', version: '1.6.0'
+
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
