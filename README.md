@@ -30,7 +30,7 @@ java面试资料整理，涵盖基础知识，分布式，消息队列，redis�
 
 ## 2.3-Atomic原子类的ABA问题       (2022/1/28更新)
 
-## 2.4-聊聊Synchronized和Lock  (2022/1/28更新Synchronized)
+## 2.4-聊聊Synchronized            (2022/1/28更新Synchronized)
 
 # 3.安全框架
 
