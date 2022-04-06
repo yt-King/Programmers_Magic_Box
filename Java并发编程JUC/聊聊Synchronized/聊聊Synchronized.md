@@ -1,4 +1,4 @@
-# 聊聊Synchronized和Lock
+# 聊聊Synchronized
 
 ## 相关链接：
 
