@@ -1,0 +1,128 @@
+# 聊聊Lock锁
+
+## 1.简介
+
+lock是一个接口，他有很多种实现，常见的有可重入锁（ReentrantLock）和读写锁（Read、WriteLock），在JUC下的一个子包locks包里。Lock需要显式地获取和释放锁，虽然不如隐式获取锁的便捷，但有了锁获取与释放的可操作性、可中断的获取锁及超时获取锁等同步特性。
+
+![image-20220411135241875](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204111352168.png)
+
+### 1.1-方法简介
+
+- void lock()：获取锁，若锁不可用，则当前线程将会阻塞，直到获得锁；
+
+  > 这是最简单也是最普通的获取锁的方式，他不像synchronized一样在异常时自动释放锁，所以必须在finally块中释放确保发生异常时能够正常释放锁。需要注意的是该方法不能被中断，所以如果陷入死锁的状况lock（）会一直等待下去。
+
+- void lockInterruptibly() throws InterruptedException：获取可中断锁，当被中断或获取到锁才返回，若锁不可用，则当前线程被阻塞，直到获取锁或被中断；
+
+  >与lock()不同的是lockInterruptibly()支持在等待锁的途中中断，或者可有说lockInterruptibly对Thread.interrupt方法的响应优先级更高，当lockInterruptibly在等待锁的途中调用中断方法这是lockInterruptibly不会获取锁而是抛出一个InterruptedException。而lock()则是优先获取锁才会响应中断，在lock等待的途中即使执行interrupt也没有用，必须等到lock获取锁以后才会响应中断
+
+- boolean tryLock()：尝试获取锁，并立即返回；true：获取锁成功；false：获取锁失败；
+
+- boolean tryLock(long time, TimeUnit unit) throws InterruptedException：尝试在指定的超时时间获取锁，当获取到锁时返回true；当超时或被中断时返回false；
+
+- Condition newCondition()：返回一个和锁绑定的条件队列；在等待条件之前线程必须先获取当前锁，同时await()方法会原子地释放锁，并在返回之前重新获取到锁；
+
+- void unlock()：释放锁；
+
+ReentrantLock和ReadWriteLock是此接口的实现：
+
+![image-20220411140005843](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204111400997.png)
+
+## 2.Lock锁的意义
+
+1. 对比于更加古老的synchronized锁，lock锁的操作更加的灵活，Lock提供了更丰富的锁操作
+2. 通常来说锁的作用是提供多线程对共享资源的独占访问，**一次只能由一个线程获得锁，只有获得锁的线程拥有对共享资源的访问权限**，但是有些所可以做到对共享资源的并发访问，比如读写锁可以并发的读共享资源。
+
+## 3.用法
+
+下面的代码是一个基本的示例，声明一个Lock锁的实例对象，调用lock方法加锁，与synchronized自动解锁所不同的是Lock需要手动释放锁，正是如此是的lock锁有了很强大的灵活性。
+
+```java
+Lock lock = new ReentrantLock();
+lock.lock();
+try{
+  
+}finally {
+  lock.unlock();
+}
+```
+
+### 3.1-Condition 的用法
+
+关键字 synchronized 与 wait()/notify()这两个方法一起使用可以实现等待/通知模式， **Lock 锁的 newContition()方法返回的 Condition 对象也可以实现等待/通知模式**。 用 notify()通知时，JVM 会随机唤醒某个等待的线程， 而使用 Condition 类可以进行选择性通知， Condition 比较常用的两个方法：
+
+- **await()**：会使当前线程等待,同时会释放锁,当等到其他线程调用`signal()`方法时,此时这个沉睡线程会重新获得锁并继续执行代码（在哪里沉睡就在哪里唤醒）。
+- **signal()**：用于唤醒一个等待的线程。
+
+**需要注意的是**在调用 Condition 的 await()/signal()方法前，也需要线程持有相关 的 Lock 锁，调用 await()后线程会释放这个锁，在调用singal()方法后会从当前 Condition对象的等待队列中，唤醒一个线程，后被唤醒的线程开始尝试去获得锁， 一旦成功获得锁就继续往下执行。
+
+```java
+class Share {
+//通过两个线程对number进行加减操作，一个线程当number == 0时 对number++，另外一个线程当number == 1时对number--
+    private Integer number = 0;
+
+    private ReentrantLock lock = new ReentrantLock();
+
+    private Condition newCondition = lock.newCondition();
+
+    // number++
+    public void incr() {
+        try {
+            lock.lock(); // 加锁
+            while (number != 0) {
+                newCondition.await();//沉睡
+            }
+            number++;
+            System.out.println(Thread.currentThread().getName() + "::" + number);
+            newCondition.signal(); //唤醒另一个沉睡的线程 
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // number--
+    public void decr() {
+        try {
+            lock.lock();
+            while (number != 1) {
+                newCondition.await();
+            }
+            number--;
+            System.out.println(Thread.currentThread().getName() + "::" + number);
+            newCondition.signal();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+
+public class LockDemo2 {
+    public static void main(String[] args) {
+        Share share = new Share();
+
+        new Thread(()->{
+            for (int i=0;i<=10;i++){
+                share.incr();
+            }
+        },"AA").start();
+
+        new Thread(()->{
+            for (int i=0;i<=10;i++){
+                share.decr();
+            }
+        },"BB").start();
+        /**out:
+         * AA::1
+         * BB::0
+         * AA::1
+         * BB::0
+         * .....
+         */     
+    }
+}
+```
+
