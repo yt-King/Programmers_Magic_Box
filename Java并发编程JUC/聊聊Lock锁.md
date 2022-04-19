@@ -157,6 +157,8 @@ AQS 中会将竞争共享资源失败的线程及其状态信息封装到一个n
 
 ### 3）什么是CLH队列
 
+参考：https://juejin.cn/post/6896278031317663751
+
 CLH：Craig、Landin and Hagersten 队列，是 **单向链表实现的队列**。申请线程只在本地变量上自旋，**它不断轮询前驱的状态**，如果发现 **前驱节点释放了锁就结束自旋**
 
 ![image-20220418092907692](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204180929770.png)
@@ -179,6 +181,69 @@ AQS 中的队列是 CLH 变体的虚拟双向队列，通过将每条请求共�
 3. Head 指向节点为已获得锁的节点，是一个虚拟节点，节点本身不持有具体线程
 4. 获取不到同步状态，会将节点进行自旋获取锁，自旋一定次数失败后会将线程阻塞，相对于 CLH 队列性能较好，并发高时性能不会有太大的影响
 
+### 4）AQS中node的组成
 
+node是用来存放线程及其附带的一些信息用的，一些主要的属性如下
 
-参考链接：https://juejin.cn/post/6896278031317663751
+>int waitStatus ：节点状态 
+>
+>volatile Node prev ：当前节点中的线程的前驱节点 
+>
+>volatile Node next ：当前节点中的线程的后继节点 
+>
+>volatile Thread thread：当前节点中的线程 
+>
+>Node nextWaiter：在同步队列里用来标识节点是独占锁节点还是共享锁节点，在条件队列里代表条件条件队列的下一个节点
+
+同时waitStatus涉及到4个可选的状态：
+
+```java
+ 		/** 表示线程已取消 */
+        static final int CANCELLED =  1;
+        /** 表示线程等待唤醒 */
+        static final int SIGNAL    = -1;
+        /** 表示线程等待获取同步锁 */
+        static final int CONDITION = -2;
+        /** 表示共享模式下无条件传播 */
+        static final int PROPAGATE = -3;
+```
+
+>**CANCELLED**：代表取消状态，该线程节点已释放（超时、中断），已取消的节点不会再阻塞
+>
+>**SIGNAL**：代表通知状态，这个状态下的节点如果被唤醒，就有义务去唤醒它的后继节点。这也就是为什么一个节点的线程阻塞之前必须保证前一个节点是 SIGNAL 状态。
+>
+>**CONDITION** ：代表条件等待状态，条件等待队列里每一个节点都是这个状态，它的节点被移到同步队列之后状态会修改为 0。
+>
+>**PROPAGATE**：代表传播状态，在一些地方用于修复 bug 和提高性能，减少不必要的循环。
+>
+>**ps:** 如果 waiterStatus 的值为 **0**，有两种情况：1、节点状态值没有被更新过（同步队列里最后一个节点的状态）；2、在唤醒线程之前头节点状态会被被修改为 0。
+>
+>**tips：** 负值表示结点处于有效等待状态，而正值表示结点已被取消。所以源码中很多地方用>0、<0来判断结点的状态是否正常。
+
+![image-20220419160915290](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204191609071.png)
+
+### 5）AQS的两种队列
+
+AQS 总共有两种队列，从node的构造方式中也可以看出，一种是用于同步队列，代表的是正常的获取释放锁的队列；另外一种是条件队列，代表的是每个 ConditionObject 对应的队列。两者都是FIFO（先进先出）队列。
+
+![image-20220419161335679](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204191613016.png)
+
+#### 同步队列
+
+同步队列是一个双向列表，其内的节点有两种，一种是独占锁的节点，一种是共享锁的节点，两者的区别是独占的节点的nextWaiter 指向null，共享锁的nextWaiter 只想一个静态的SHARED 节点。两种队列都包括head节点和tail节点。head节点是一个空的头节点，主要用作后续的调度。
+
+![image-20220419210611913](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192106008.png)
+
+#### 条件队列
+
+条件队列是单链，它没有空的头节点，每个节点都有对应的线程。条件队列头节点和尾节点的指针分别是 firstWaiter 和 lastWaiter 。
+
+![image-20220419211214815](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192112873.png)
+
+### 6）Condition接口
+
+上面说到了条件队列，条件等待和条件唤醒功能一般都是 ReentrantLock 与 AQS 的内部类 配合实现的。一个 ReentrantLock 可以创建多个 ConditionObject 实例，每个实例对应一个条件队列，以保证每个实例都有自己的等待唤醒逻辑，不会相互影响。条件队列里的线程对应的节点被唤醒时会被放到 ReentrantLock 的同步队列里，让同步队列去完成唤醒和重新尝试获取锁的工作。可以理解为条件队列是依赖同步队列的，它们协同才能完成条件等待和条件唤醒功能。
+
+而在AQS中ConditionObject 是通过实现Condition接口来完成的，类似Object的wait()、wait(long timeout)、notify()以及notifyAll()的方法结合synchronized内置锁可以实现可以实现等待/通知模式，Condition接口定义了await()、awaitNanos(long)、signal()、signalAll()等方法，配合对象锁实例实现等待/通知功能。
+
+![image-20220419213817740](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192138853.png)
