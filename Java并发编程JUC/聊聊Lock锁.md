@@ -247,3 +247,98 @@ AQS 总共有两种队列，从node的构造方式中也可以看出，一种是
 而在AQS中ConditionObject 是通过实现Condition接口来完成的，类似Object的wait()、wait(long timeout)、notify()以及notifyAll()的方法结合synchronized内置锁可以实现可以实现等待/通知模式，Condition接口定义了await()、awaitNanos(long)、signal()、signalAll()等方法，配合对象锁实例实现等待/通知功能。
 
 ![image-20220419213817740](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192138853.png)
+
+## 5.AQS源码分析
+
+### 1）独占锁
+
+**独占模式**，即只允许一个线程获取同步状态，当这个线程还没有释放同步状态时，其他线程是获取不了的，只能加入到同步队列，进行等待。
+
+首先调用的是acquire方法，两种结果：1. 成功，则方法结束返回，2. 失败，先调用addWaiter()然后在调用acquireQueued()方法
+
+```java
+//以独占模式获取，忽略中断。通过调用至少一次 tryAcquire 来实现，成功返回。否则线程排队，可能重复阻塞和解除阻塞，调用 tryAcquire 直到成功。此方法可用于实现方法 Lock.lock。
+public final void acquire(int arg) {
+    if (!tryAcquire(arg) &&
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))// 这里 Node.EXCLUSIVE 的值是 null
+        selfInterrupt();
+}
+```
+
+tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获取锁，获取成功就不会再执行其他代码了。
+
+```java
+    protected boolean tryAcquire(int arg) {
+        throw new UnsupportedOperationException();
+    }
+```
+
+获取锁失败的情况下则将进行入队操作，即addWaiter(Node.EXCLUSIVE)
+
+```java
+    private Node addWaiter(Node mode) {//mode = Node.EXCLUSIVE = null
+        Node node = new Node(Thread.currentThread(), mode);
+        // Try the fast path of enq; backup to full enq on failure
+        Node pred = tail;
+        if (pred != null) {// 如果尾节点不为空，就把节点放在尾节点后面并设置为新的尾节点
+            node.prev = pred;
+            if (compareAndSetTail(pred, node)) {// 尝试把节点设置为新的尾节点
+                pred.next = node;
+                return node;
+            }
+        }
+        enq(node);
+        return node;
+    }
+```
+
+设置失败的话会进入一个方法`enq()`。如果当前没有尾节点，则会直接进入到`enq()`方法
+
+```java
+private Node enq(final Node node) {
+        for (;;) {
+            Node t = tail;
+            if (t == null) {  // 如果尾节点为空，那么队列也为空，新建一个头节点，让 head 和 tail 都指向它
+                if (compareAndSetHead(new Node()))
+                    tail = head;
+            } else {// 如果有尾节点，把传入的节点放入队尾
+                node.prev = t;
+                if (compareAndSetTail(t, node)) {
+                    t.next = node;
+                    return t;
+                }
+            }
+        }
+    }
+```
+
+该方法先判断是否有尾节点，没有的话则说明需要初始化（因为没有尾节点也就意味着没有头节点），通过CAS新增一个空的头节点，然后尾指针也指向这个节点。如果有尾节点的话就直接将这个节点加在尾节点后面，然后通过CAS将尾指针指向新的尾节点。
+
+![image-20220421164553026](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204211645138.png)
+
+`addWaiter()`方法结束后，接下来就是方法`acquireQueued()`，
+
+```java
+ final boolean acquireQueued(final Node node, int arg) {
+        boolean failed = true;
+        try {
+            boolean interrupted = false;
+            for (;;) {
+                final Node p = node.predecessor();
+                if (p == head && tryAcquire(arg)) {
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return interrupted;
+                }
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                    parkAndCheckInterrupt())
+                    interrupted = true;
+            }
+        } finally {
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+```
+
