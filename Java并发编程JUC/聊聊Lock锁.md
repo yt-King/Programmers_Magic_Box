@@ -210,7 +210,7 @@ node是用来存放线程及其附带的一些信息用的，一些主要的属�
 
 >**CANCELLED**：代表取消状态，该线程节点已释放（超时、中断），已取消的节点不会再阻塞
 >
->**SIGNAL**：代表通知状态，这个状态下的节点如果被唤醒，就有义务去唤醒它的后继节点。这也就是为什么一个节点的线程阻塞之前必须保证前一个节点是 SIGNAL 状态。
+>**SIGNAL**：代表通知状态，这个状态下的节点如果被唤醒，就有义务去唤醒它的后继节点。这也就是为什么一个节点的线程阻塞之前必须保证前一个节点是 SIGNAL 状态，因为这样才能保证前一个节点可以去唤醒他的后继节点。
 >
 >**CONDITION** ：代表条件等待状态，条件等待队列里每一个节点都是这个状态，它的节点被移到同步队列之后状态会修改为 0。
 >
@@ -230,7 +230,7 @@ AQS 总共有两种队列，从node的构造方式中也可以看出，一种是
 
 #### 同步队列
 
-同步队列是一个双向列表，其内的节点有两种，一种是独占锁的节点，一种是共享锁的节点，两者的区别是独占的节点的nextWaiter 指向null，共享锁的nextWaiter 只想一个静态的SHARED 节点。两种队列都包括head节点和tail节点。head节点是一个空的头节点，主要用作后续的调度。
+同步队列是一个双向列表，其内的节点有两种，一种是独占队列的节点，一种是共享队列的节点，两者的区别是独占的节点的nextWaiter 指向null，共享锁的nextWaiter 指向一个静态的SHARED 节点。两种队列都包括head节点和tail节点。head节点是一个空的头节点，主要用作后续的调度。
 
 ![image-20220419210611913](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192106008.png)
 
@@ -256,16 +256,20 @@ AQS 总共有两种队列，从node的构造方式中也可以看出，一种是
 
 首先调用的是acquire方法，两种结果：1. 成功，则方法结束返回，2. 失败，先调用addWaiter()然后在调用acquireQueued()方法
 
+#### acquire(int arg)
+
 ```java
 //以独占模式获取，忽略中断。通过调用至少一次 tryAcquire 来实现，成功返回。否则线程排队，可能重复阻塞和解除阻塞，调用 tryAcquire 直到成功。此方法可用于实现方法 Lock.lock。
 public final void acquire(int arg) {
     if (!tryAcquire(arg) &&
-        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))// 这里 Node.EXCLUSIVE 的值是 null
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))// 这里 Node.EXCLUSIVE 的值是 null,Node.EXCLUSIVE互斥模式、Node.SHARED共享模式
         selfInterrupt();
 }
 ```
 
 tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获取锁，获取成功就不会再执行其他代码了。
+
+#### tryAcquire(int arg)
 
 ```java
     protected boolean tryAcquire(int arg) {
@@ -273,7 +277,13 @@ tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获�
     }
 ```
 
-获取锁失败的情况下则将进行入队操作，即addWaiter(Node.EXCLUSIVE)
+获取锁失败的情况下则将进行入队操作，即addWaiter(Node.EXCLUSIVE),这里的Node.EXCLUSIVE是空，用于构造nextWaiter，这是在独占锁的模式下，共享锁的话则使用Node.SHARED。之前说到过同步队列中的节点有两种，一种是共享模式，队列中的每个节点都指向一个静态的SHARED 节点，即下图中的SHARED，而独占队列每个节点都指向的是空，即EXCLUSIVE。
+
+![image-20220422094202664](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204220942907.png)
+
+接下来来看一下addWaiter的源码
+
+#### addWaiter(Node mode)
 
 ```java
     private Node addWaiter(Node mode) {//mode = Node.EXCLUSIVE = null
@@ -292,7 +302,9 @@ tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获�
     }
 ```
 
-设置失败的话会进入一个方法`enq()`。如果当前没有尾节点，则会直接进入到`enq()`方法
+设置失败的话会进入一个方法`enq()`。如果当前没有尾节点，则会直接进入到`enq()`方法，**用于完成对同步队列的头结点初始化工作以及CAS操作失败的重试**
+
+#### enq(final Node node)
 
 ```java
 private Node enq(final Node node) {
@@ -316,7 +328,9 @@ private Node enq(final Node node) {
 
 ![image-20220421164553026](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204211645138.png)
 
-`addWaiter()`方法结束后，接下来就是方法`acquireQueued()`，
+`addWaiter()`方法结束后，接下来就是方法`acquireQueued()`，用于已在队列中的线程以独占且不间断模式获取state状态，直到获取锁后返回
+
+#### acquireQueued(final Node node, int arg)
 
 ```java
  final boolean acquireQueued(final Node node, int arg) {
@@ -324,21 +338,136 @@ private Node enq(final Node node) {
         try {
             boolean interrupted = false;
             for (;;) {
-                final Node p = node.predecessor();
-                if (p == head && tryAcquire(arg)) {
-                    setHead(node);
-                    p.next = null; // help GC
+                final Node p = node.predecessor();// 核验并获取前一个节点，如果前一个节点不存在，直接抛异常
+                if (p == head && tryAcquire(arg)) {// 如果前一个节点就是头节点，让这个节点的线程尝试获取锁
+                    setHead(node);//获取锁成功后把当前节点设置为头节点
+                    p.next = null; // 将之前头节点的 next 指针置空，后面 GC 时会回收p
                     failed = false;
                     return interrupted;
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
+                if (shouldParkAfterFailedAcquire(p, node) &&// 若没有获取锁则判断是否应该阻塞当前线程（核心是判断并修正前面节点的 waitStatus）
+                    parkAndCheckInterrupt())// 阻塞当前线程、返回并清除中断标记
                     interrupted = true;
             }
         } finally {
+            //将当前节点设置为取消状态
             if (failed)
                 cancelAcquire(node);
         }
     }
 ```
 
+acquireQueued()方法的流程大致如下：
+
+![image-20220422114524482](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204221145696.png)
+
+获取锁的代码已经讲完了，接下来看看前节点不是头节点时判断是否需要阻塞的方法shouldParkAfterFailedAcquire（），先来回顾一下节点的waitStatus的作用
+
+>**CANCELLED**：代表取消状态，该线程节点已释放（超时、中断），已取消的节点不会再阻塞
+>
+>**SIGNAL**：代表通知状态，这个状态下的节点如果被唤醒，就有义务去唤醒它的后继节点。这也就是为什么一个节点的线程阻塞之前必须保证前一个节点是 SIGNAL 状态，因为这样才能保证前一个节点可以去唤醒他的后继节点。
+>
+>**CONDITION** ：代表条件等待状态，条件等待队列里每一个节点都是这个状态，它的节点被移到同步队列之后状态会修改为 0。
+>
+>**PROPAGATE**：代表传播状态，在一些地方用于修复 bug 和提高性能，减少不必要的循环。
+>
+>**ps:** 如果 waiterStatus 的值为 **0**，有两种情况：1、节点状态值没有被更新过（同步队列里最后一个节点的状态）；2、在唤醒线程之前头节点状态会被被修改为 0。
+>
+>**tips：** 负值表示结点处于有效等待状态，而正值表示结点已被取消。所以源码中很多地方用>0、<0来判断结点的状态是否正常。
+
+#### shouldParkAfterFailedAcquire(Node pred, Node node)
+
+```java
+    private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+        int ws = pred.waitStatus;
+        if (ws == Node.SIGNAL)
+            /* 判断前面节点状态为 SIGNAL ，返回 true
+             * This node has already set status asking a release
+             * to signal it, so it can safely park.
+             */
+            return true;
+        if (ws > 0) {
+            /* 如果前面的节点状态为取消（CANCEL值为1）,就一直向前查找，直到找到状态不为取消的节点，把它放在这个节点后面
+             * Predecessor was cancelled. Skip over predecessors and
+             * indicate retry.
+             */
+            do {
+                node.prev = pred = pred.prev;
+            } while (pred.waitStatus > 0);
+            pred.next = node;
+        } else {
+            /* 如果前面节点不是取消也不是 SIGNAL 状态，将其设置为 SIGNAL 状态
+             * waitStatus must be 0 or PROPAGATE.  Indicate that we
+             * need a signal, but don't park yet.  Caller will need to
+             * retry to make sure it cannot acquire before parking.
+             */
+            compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+        }
+        return false;
+    }
+```
+
+当shouldParkAfterFailedAcquire返回 true 时，就会进入下一个方法parkAndCheckInterrupt()：
+
+#### parkAndCheckInterrupt()
+
+```java
+    private final boolean parkAndCheckInterrupt() {
+        LockSupport.park(this); // 阻塞当前线程，通过LockSupport类调用 Unsafe 这个类的 park() 方法进行阻塞
+        return Thread.interrupted();// 返回并清除当前线程中断状态
+    }
+```
+
+到此加锁的过程就结束了，接下来时解锁的部分-> release()
+
+#### release(int arg)
+
+```java
+    public final boolean release(int arg) {
+        if (tryRelease(arg)) {// 尝试释放锁，如果成功则唤醒后继节点的线程
+            //tryRelease()跟tryAcquire()一样实现都是由具体的锁来实现的。
+            Node h = head;
+            if (h != null && h.waitStatus != 0)
+                unparkSuccessor(h);// 唤醒后面节点中第一个非取消状态节点的线程
+            return true;
+        }
+        return false;
+    }
+```
+
+方法开始尝试释放锁，若失败直接返回，如果释放锁成功，那么就会接着判断头节点是否为空和头节点 waitStatus 是否不为 0 ，因为在唤醒头节点的后继之前会通过CAS尝试将头节点状态置0的操作。如果头节点的状态为 0 了，说明正在释放后继节点，这时候也就不再需要释放了，直接返回 true。判断状态之后就是unparkSuccessor方法：
+
+#### unparkSuccessor(Node node)
+
+```java
+    private void unparkSuccessor(Node node) {
+        /*
+         * If status is negative (i.e., possibly needing signal) try
+         * to clear in anticipation of signalling.  It is OK if this
+         * fails or if status is changed by waiting thread.
+         */
+        int ws = node.waitStatus;// 获取头节点（head）的状态
+        if (ws < 0)
+            compareAndSetWaitStatus(node, ws, 0); //通过CAS操作尝试将头节点状态置0
+
+        /*
+         * Thread to unpark is held in successor, which is normally
+         * just the next node.  But if cancelled or apparently null,
+         * traverse backwards from tail to find the actual
+         * non-cancelled successor.
+         */
+        Node s = node.next;
+        if (s == null || s.waitStatus > 0) {// 如果后面这个节点状态为取消，那么就找到一个位置最靠前的非取消状态的节点
+            s = null;
+            for (Node t = tail; t != null && t != node; t = t.prev)
+                if (t.waitStatus <= 0)
+                    s = t;
+        }
+        if (s != null)
+            LockSupport.unpark(s.thread);// 唤醒符合条件的后继节点，通过LockSupport类调用 Unsafe 这个类的 unpark() 方法进行唤醒
+    }
+```
+
+#### 总结：
+
+**在获取同步状态时，AQS维护一个同步队列，获取同步状态失败的线程会加入到队列中进行自旋；移除队列（或停止自旋）的条件是前驱节点是头结点并且成功获得了同步状态。在释放同步状态时，同步器会调用unparkSuccessor()方法唤醒后继节点。**
