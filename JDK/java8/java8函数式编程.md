@@ -43,4 +43,29 @@ java8的 `Stream` 使用的是函数式编程模式，可以用来对集合或�
 
 ![image-20220507205740070](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205072057167.png)
 
+### 2.创建流
+
+```java
+//1.创建一个空的流
+Stream<String> emptyStream = Stream.empty();
+
+//可以用empty() 方法来返回一个空流从而避免返回null
+public Stream<String> streamOf(List<String> list) {
+    return list == null || list.isEmpty() ? Stream.empty() : list.stream();
+}
+
+//2.使用数组创建流
+String[] arr = new String[]{"1", "2", "3"，"4", "5"};
+Stream<String> entireArrayStream = Arrays.stream(arr);//使用全部
+Stream<String> partArrayStream = Arrays.stream(arr, 1, 4);//使用一部分
+
+//3.使用集合创建流
+Collection<String> collection = Arrays.asList("1", "2", "3");
+Stream<String> collectionStream = collection.stream();
+
+//4.使用Stream.Builder()来创建流，注意申明好类型，否则会创建 Stream<Obejct> 的流
+Stream<String> streamBuilder = Stream.<String>builder().add("1").add("2").add("3").build();
+
+
+```
 
