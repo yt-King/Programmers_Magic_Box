@@ -110,7 +110,7 @@ Stream<String> stringStream = Pattern.compile(",").splitAsStream("a,b,c");
 
 ### 3.基本用法
 
-#### 3.1 forEach()方法
+#### 3.1 forEach()方法（终结操作）
 
 对每个元素执行指定的动作，也就是对元素进行遍历
 
@@ -128,7 +128,7 @@ It
 Now
 ```
 
-#### 3.2 filter()方法
+#### 3.2 filter()方法（中间操作）
 
 **filter()** 方法的作用是返回符合条件的Stream。
 
@@ -146,7 +146,7 @@ Try
 Now
 ```
 
-#### 3.3 distinct()方法
+#### 3.3 distinct()方法（中间操作）
 
 **distinct()** 方法返回一个去重的stream。
 
@@ -157,7 +157,7 @@ Arrays.asList("Try", "It", "Now", "Now")
                 .forEach(System.out::println);
 ```
 
-#### 3.4 sorted()方法
+#### 3.4 sorted()方法（中间操作）
 
 排序函数有两个，一个是自然顺序，还有一个是自定义比较器排序。
 
@@ -176,9 +176,9 @@ Try
 Now
 ```
 
-#### 3.5 map()方法
+#### 3.5 map()方法（中间操作）
 
-**map()** 方法对每个元素按照某种操作进行转换，转换后流的元素不会改变，但是元素类型取决于转换之后的类型。
+**map()** 方法对每个元素按照某种操作进行转换，转换后流的元素个数不会改变，但是元素类型取决于转换之后的类型。
 
 ```java
 Arrays.asList("Try", "It", "Now")
@@ -195,7 +195,42 @@ IT
 NOW
 ```
 
-#### 3.6 flatMap()方法
+#### 3.6 limit()方法（中间操作）
+
+设置流的最大长度，超出的部分将被抛弃
+
+```java
+Arrays.asList("Try", "It", "Now")
+                .stream()
+                .limit(1)
+                .forEach(System.out::println);
+```
+
+输出结果：
+
+```java
+Try
+```
+
+#### 3.7 skip()方法（中间操作）
+
+跳过流中的前n个元素，返回剩下的元素
+
+```java
+ Arrays.asList("Try", "It", "Now")
+                .stream()
+                .skip(1)
+                .forEach(System.out::println);
+```
+
+输出结果：
+
+```java
+It
+Now
+```
+
+#### 3.8 flatMap()方法（中间操作）
 
 flat的英文就是”平坦的“意思，而flatMap()方法的作用就是将流的元素摊平，借助下面这个例子我们更好理解：
 
@@ -214,6 +249,12 @@ Now
 ```
 
 在上述这段代码中，原来的stream有两个元素，分别是两个List，执行了flatMap()之后，将每个List都”摊平“成了一个个的元素，所以会产生一个有三个字符串组成的流。
+
+#### 3.9 count()方法（终结操作）
+
+获取当前流中元素的个数
+
+
 
 ### 4.归约操作
 
