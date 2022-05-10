@@ -254,7 +254,77 @@ Now
 
 获取当前流中元素的个数
 
+#### 3.10 max&min()方法（终结操作）
 
+获取流中的最值，返回Optional对象
+
+```java
+System.out.println(Arrays.asList("Try", "It", "Nooow")
+                .stream()
+                .max((s1, s2) -> s1.length() - s2.length()));
+//Optional[Nooow]
+```
+
+#### 3.11 查找与匹配方法（终结操作）
+
+- anyMatch
+
+判断是否有任意符合匹配条件的元素，结果为布尔类型
+
+```java
+boolean flag = students
+                .stream()
+                .anyMatch(student -> student.getName().equals("Jack"));
+System.out.println("flag = " + flag);//flag = true
+```
+
+- allMatch
+
+判断所有元素是否全部符合
+
+```java
+ boolean flag = students
+                .stream()
+                .allMatch(student -> student.getName().equals("Jack"));
+System.out.println("flag = " + flag);//flag = false
+```
+
+- noneMatch
+
+判断是否全部不一致
+
+```java
+boolean flag = students
+    .stream()
+    .noneMatch(student -> student.getName().equals("Jack"));
+System.out.println("flag = " + flag);//flag = false
+```
+
+- findAny
+
+找到一个值，不一定是第一个，可以跟过滤器搭配使用，返回一个optional对象
+
+```java
+//找到一个名字长度大于三个字人的名字 
+Optional<Student> res = students
+     .stream()
+     .filter(student -> student.getName().length() > 3)
+     .findAny();
+res.ifPresent(x -> System.out.println(x.getName()));//Jack
+```
+
+- findFirst
+
+找到第一个符合条件的值，可以跟过滤器搭配使用，返回一个optional对象
+
+```java
+//找到第一个名字长度大于三个字人的名字
+Optional<Student> res = students
+        .stream()
+        .filter(student -> student.getName().length() > 3)
+        .findFirst();
+res.ifPresent(x -> System.out.println(x.getName()));//Jack
+```
 
 ### 4.归约操作
 
@@ -359,6 +429,19 @@ System.out.println(doubleSummaryStatistics.getSum());//255.0
 
 **2. 将流转换成Collection**
 
+```java
+//转换成list
+List<String> collect = Arrays.asList("Try", "It", "Nooow")
+                .stream()
+                .collect(Collectors.toList());
+System.out.println(collect);//[Try, It, Nooow]
+//转换成set
+ Set<String> collect = Arrays.asList("Try", "It", "Nooow","It", "Nooow")
+                .stream()
+                .collect(Collectors.toSet());
+System.out.println(collect);//[Nooow, Try, It]
+```
+
 - 提取集合中的Student的Name属性，并且装入字符串类型的集合当中
 
 ```java
@@ -378,9 +461,11 @@ Map不能直接转换成Stream，但是Stream生成Map是可行的，在生成Ma
 下面这个例子为我们展示了怎么将`students`列表转换成`<Student student, double score>`组成的map。
 
 ```java
-Map<Student, Double> collect = students
-                .stream()
-                .collect(Collectors.toMap(Function.identity(), Student::getScore));
+Map<String, Integer> collect = students
+    .stream()
+    .collect(Collectors.toMap(Student::getName, Student::getScore));
+System.out.println(collect);
+//{Mike=80, Tom=85, Jack=90}
 ```
 
 **Collectors.groupingBy()**
