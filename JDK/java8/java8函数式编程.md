@@ -20,9 +20,9 @@ Lambda时jdk8的一个语法糖，他可以对某些匿名内部类的写法进�
 
 刚开始的时候可以先将匿名内部类的写法写出来，然后只需关注匿名内部类中方法的参数和方法体的代码再进行改写即可。
 
-![image-20220507200913819](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205072009939.png)
+![image-20220507200913819](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205072009939.png)
 
-![image-20220507203955028](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205072039345.png)
+![image-20220507203955028](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205072039345.png)
 
 ### 4.省略规则
 
@@ -41,7 +41,7 @@ java8的 `Stream` 使用的是函数式编程模式，可以用来对集合或�
 
 终端操作也可分为**短路与非短路操作**，前者是指遇到符合条件的元素就可以得到最终结果，而后者必须处理所有元素才能得到最终结果。
 
-![image-20220507205740070](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205072057167.png)
+![image-20220507205740070](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205072057167.png)
 
 ### 2.创建流
 
@@ -496,9 +496,9 @@ Map<Boolean, List<Student>> map = students.stream().collect(Collectors.partition
 
 ### 6.基本数据类型优化
 
-![image-20220511183237926](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111832093.png)
+![image-20220511183237926](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111832093.png)
 
-![image-20220511183310304](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111833443.png)
+![image-20220511183310304](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111833443.png)
 
 ## Optional
 
@@ -608,25 +608,25 @@ optional.map(student1 -> student1.getScore()).ifPresent(System.out::println); //
 
   根据其中抽象方法的参数列表和返回值类型，我们可以在方法中对传入的参数进行消费
 
-  ![image-20220511150911620](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111511554.png)
+  ![image-20220511150911620](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111511554.png)
 
 -  Function 计算转换接口
 
   根据传入的数值进行自定义的计算后返回结果
 
-  ![image-20220511153819427](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111538521.png)
+  ![image-20220511153819427](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111538521.png)
 
 -  Predicate 判断接口
 
   根据传入的参数进行条件判断返回判断结果
 
-![image-20220511153917071](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111539182.png)
+![image-20220511153917071](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111539182.png)
 
 -  Supplier 生产型接口
 
   可以在方法中创建对象然后将创建好的对象返回
 
-  ![image-20220511154042037](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111540144.png)
+  ![image-20220511154042037](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111540144.png)
 
 ## 方法引用
 
@@ -638,7 +638,7 @@ optional.map(student1 -> student1.getScore()).ifPresent(System.out::println); //
 
 不需要过多的去考虑，只要在写完Lambda表达式后看是否方法体只有一行代码而且是方法的调用，然后尝试用idea快捷键能否成功转换为方法引用即可。
 
-![image-20220511155852454](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111558580.png)
+![image-20220511155852454](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111558580.png)
 
 ### 3. 语法详解
 
@@ -654,7 +654,7 @@ optional.map(student1 -> student1.getScore()).ifPresent(System.out::println); //
 
 > 再重写方法时方法体中只有**一行代码**，并且这行代码调用了某个类的**静态方法**，同时我们要把**重写的抽象方法中的所有参数都按照顺序传入了这个静态方法中**，这是才可以引用类的静态方法
 
-![image-20220511160605913](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111606020.png)
+![image-20220511160605913](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111606020.png)
 
 #### 3.2 引用对象的实例方法
 
@@ -668,7 +668,7 @@ optional.map(student1 -> student1.getScore()).ifPresent(System.out::println); //
 
 > 再重写方法时方法体中只有**一行代码**，并且这行代码调用了某个对象的**成员方法**，同时我们要把**重写的抽象方法中的所有参数都按照顺序传入了这个成员方法中**，这是才可以引用对象的实例方法
 
-![image-20220511160911437](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111609547.png)
+![image-20220511160911437](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111609547.png)
 
 #### 3.3 引用类的实例方法
 
@@ -682,7 +682,7 @@ optional.map(student1 -> student1.getScore()).ifPresent(System.out::println); //
 
 > 再重写方法时方法体中只有**一行代码**，并且这行代码调用了**第一个参数的成员方法**，同时我们要把**重写的抽象方法中的所有剩余的参数都按照顺序传入了这个成员方法中**，这是才可以引用这个类的实例方法
 
-![image-20220511161318891](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205111613043.png)
+![image-20220511161318891](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205111613043.png)
 
 #### 3.4 引用类的静态方法
 

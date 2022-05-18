@@ -10,11 +10,11 @@
 
 绝大多数的类图分为三个部分。部分类图有五个部分。
 
-![image-20220509210725490](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205092107677.png)
+![image-20220509210725490](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205092107677.png)
 
 UML类图主要是用来描述类之间的轮廓图，而类之间的常见关系就是泛化、实现、依赖、关联、聚合、组合等。表示关系的强弱：依赖 < 关联 < 聚合 < 组合 < 泛化（继承）
 
-![image-20220509211334565](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205092113668.png)
+![image-20220509211334565](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205092113668.png)
 
 ## 3.类之间的关系
 
@@ -41,7 +41,7 @@ class Telecontrol{  //遥控器类
 }
 ```
 
-![image-20220510100303127](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205101003206.png)
+![image-20220510100303127](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205101003206.png)
 
 ### 4）组合
 
@@ -60,7 +60,7 @@ class YiChun{  //宜春
 }
 ```
 
-![image-20220510100440163](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205101004213.png)
+![image-20220510100440163](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205101004213.png)
 
 ### 5）关联
 
@@ -89,7 +89,7 @@ class Person{
 }
 ```
 
-![’](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205101006010.webp)
+![’](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205101006010.webp)
 
 ！！在UML类中有如下几种关联关系：
 
@@ -141,8 +141,8 @@ class B{//B依赖A
 
 首先去Setting中设置一下UML类图的显示设置，按需勾选
 
-![image-20220509211722215](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205092117408.png)
+![image-20220509211722215](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205092117408.png)
 
 然后就可以查看对应的类的UML图了
 
-![在这里插入图片描述](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/5/202205092118564.webp)
+![在这里插入图片描述](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/5/202205092118564.webp)

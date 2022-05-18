@@ -1,12 +1,12 @@
 # 聊聊Lock锁
 
-![image-20220414102700078](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204141027306.png)
+![image-20220414102700078](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204141027306.png)
 
 ## 1.简介
 
 lock是一个接口，他有很多种实现，常见的有可重入锁（ReentrantLock）和读写锁（Read、WriteLock），在JUC下的一个子包locks包里。Lock需要显式地获取和释放锁，虽然不如隐式获取锁的便捷，但有了锁获取与释放的可操作性、可中断的获取锁及超时获取锁等同步特性。
 
-![image-20220411135241875](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204111352168.png)
+![image-20220411135241875](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204111352168.png)
 
 ### 1.1-方法简介
 
@@ -28,7 +28,7 @@ lock是一个接口，他有很多种实现，常见的有可重入锁（Reentra
 
 ReentrantLock和ReadWriteLock是此接口的实现：
 
-![image-20220411140005843](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204111400997.png)
+![image-20220411140005843](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204111400997.png)
 
 ## 2.Lock锁的意义
 
@@ -149,11 +149,11 @@ ReentrantLock实现了Lock接口，表示重入锁。是线程在获得锁之后
 
 AQS全称`AbstractQueuedSynchronizer`，即抽象的队列同步器，是一种用来构建锁和同步器的框架。他的核心思想就是实现同步，当一个共享资源被请求时是处于空闲状态的，那么AQS就会将当前请求资源的线程设置为状态有效的线程，并且给请求到的资源加锁。而那些请求已经加了锁的资源而失败的线程或者说在刚刚争用资源时失败了的线程，则会通过一套线程阻塞等待以及被唤醒时锁分配的机制来进行管理。在AQS中是通过一个变体的 CLH 队列来实现的。
 
-![image-20220418091647330](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204180916528.png)
+![image-20220418091647330](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204180916528.png)
 
 AQS 中会将竞争共享资源失败的线程及其状态信息封装到一个node中加入到一个变体的 CLH 队列中，接下来会不断自旋（cas）尝试获取锁，条件是当前节点是头结点的直接后继才会尝试。失败一定次数后则阻塞自己等待被唤醒。而持有锁的线程释放锁时会唤醒后继的节点中的线程。
 
-![image-20220418092533237](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204180925289.png)
+![image-20220418092533237](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204180925289.png)
 
 ### 3）什么是CLH队列
 
@@ -161,7 +161,7 @@ AQS 中会将竞争共享资源失败的线程及其状态信息封装到一个n
 
 CLH：Craig、Landin and Hagersten 队列，是 **单向链表实现的队列**。申请线程只在本地变量上自旋，**它不断轮询前驱的状态**，如果发现 **前驱节点释放了锁就结束自旋**
 
-![image-20220418092907692](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204180929770.png)
+![image-20220418092907692](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204180929770.png)
 
 CLH 队列具有以下特点：
 
@@ -172,7 +172,7 @@ CLH 队列具有以下特点：
 
 AQS 中的队列是 CLH 变体的虚拟双向队列，通过将每条请求共享资源的线程封装成一个节点来实现锁的分配
 
-![image-20220418092941448](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204180929541.png)
+![image-20220418092941448](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204180929541.png)
 
 相比于 CLH 队列而言，AQS 中的 CLH 变体等待队列拥有以下特性
 
@@ -220,25 +220,25 @@ node是用来存放线程及其附带的一些信息用的，一些主要的属�
 >
 >**tips：** 负值表示结点处于有效等待状态，而正值表示结点已被取消。所以源码中很多地方用>0、<0来判断结点的状态是否正常。
 
-![image-20220419160915290](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204191609071.png)
+![image-20220419160915290](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204191609071.png)
 
 ### 5）AQS的两种队列
 
 AQS 总共有两种队列，从node的构造方式中也可以看出，一种是用于同步队列，代表的是正常的获取释放锁的队列；另外一种是条件队列，代表的是每个 ConditionObject 对应的队列。两者都是FIFO（先进先出）队列。
 
-![image-20220419161335679](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204191613016.png)
+![image-20220419161335679](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204191613016.png)
 
 #### 同步队列
 
 同步队列是一个双向列表，其内的节点有两种，一种是独占队列的节点，一种是共享队列的节点，两者的区别是独占的节点的nextWaiter 指向null，共享锁的nextWaiter 指向一个静态的SHARED 节点。两种队列都包括head节点和tail节点。head节点是一个空的头节点，主要用作后续的调度。
 
-![image-20220419210611913](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192106008.png)
+![image-20220419210611913](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204192106008.png)
 
 #### 条件队列
 
 条件队列是单链，它没有空的头节点，每个节点都有对应的线程。条件队列头节点和尾节点的指针分别是 firstWaiter 和 lastWaiter 。
 
-![image-20220419211214815](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192112873.png)
+![image-20220419211214815](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204192112873.png)
 
 ### 6）Condition接口
 
@@ -246,7 +246,7 @@ AQS 总共有两种队列，从node的构造方式中也可以看出，一种是
 
 而在AQS中ConditionObject 是通过实现Condition接口来完成的，类似Object的wait()、wait(long timeout)、notify()以及notifyAll()的方法结合synchronized内置锁可以实现可以实现等待/通知模式，Condition接口定义了await()、awaitNanos(long)、signal()、signalAll()等方法，配合对象锁实例实现等待/通知功能。
 
-![image-20220419213817740](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204192138853.png)
+![image-20220419213817740](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204192138853.png)
 
 ## 5.AQS源码分析
 
@@ -279,7 +279,7 @@ tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获�
 
 获取锁失败的情况下则将进行入队操作，即addWaiter(Node.EXCLUSIVE),这里的Node.EXCLUSIVE是空，用于构造nextWaiter，这是在独占锁的模式下，共享锁的话则使用Node.SHARED。之前说到过同步队列中的节点有两种，一种是共享模式，队列中的每个节点都指向一个静态的SHARED 节点，即下图中的SHARED，而独占队列每个节点都指向的是空，即EXCLUSIVE。
 
-![image-20220422094202664](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204220942907.png)
+![image-20220422094202664](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204220942907.png)
 
 接下来来看一下addWaiter的源码
 
@@ -326,7 +326,7 @@ private Node enq(final Node node) {
 
 该方法先判断是否有尾节点，没有的话则说明需要初始化（因为没有尾节点也就意味着没有头节点），通过CAS新增一个空的头节点，然后尾指针也指向这个节点。如果有尾节点的话就直接将这个节点加在尾节点后面，然后通过CAS将尾指针指向新的尾节点。
 
-![image-20220421164553026](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204211645138.png)
+![image-20220421164553026](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204211645138.png)
 
 `addWaiter()`方法结束后，接下来就是方法`acquireQueued()`，用于已在队列中的线程以独占且不间断模式获取state状态，直到获取锁后返回
 
@@ -359,7 +359,7 @@ private Node enq(final Node node) {
 
 acquireQueued()方法的流程大致如下：
 
-![image-20220422114524482](https://gitee.com/master_p/ImageHost/raw/master/Typora/2022/4/202204221145696.png)
+![image-20220422114524482](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204221145696.png)
 
 获取锁的代码已经讲完了，接下来看看前节点不是头节点时判断是否需要阻塞的方法shouldParkAfterFailedAcquire（），先来回顾一下节点的waitStatus的作用
 
