@@ -208,3 +208,98 @@ HTTP/1.1 中存在一种称为传输编码（Transfer Coding）的机制，它�
 ```
 
 ### 3.4 发送多种数据的多部分对象集合
+
+HTTP 协议中采用了多部分对象集合，可以容纳多份不同类型的数据，多部分集合包含对象如下：
+
+- multipart/form-data：在 Web 表单文件上传时使用。
+
+  ```http
+  Content-Type: multipart/form-data; boundary=AaB03x 
+  --AaB03x 
+  Content-Disposition: form-data; name="field1"
+  
+  Joe Blow 
+  --AaB03x 
+  Content-Disposition: form-data; name="pics"; filename="file1.txt"
+  Content-Type: text/plain 
+  
+  ...（file1.txt的数据）... --AaB03x--
+  ```
+
+- multipart/byteranges：状态码 206（Partial Content，部分内容）响应报文包含了多个范围的内容时使用。
+
+  ```http
+  HTTP/1.1 206 Partial Content
+  Date: Fri, 13 Jul 2012 02:45:26 GMT 
+  Last-Modified: Fri, 31 Aug 2007 02:02:20 GMT 
+  Content-Type: multipart/byteranges; boundary=THIS_STRING_SEPARATES 
+  
+  --THIS_STRING_SEPARATES 
+  Content-Type: application/pdf 
+  Content-Range: bytes 500-999/8000
+  
+  ...（范围指定的数据）... 
+  --THIS_STRING_SEPARATES 
+  Content-Type: application/pdf 
+  Content-Range: bytes 7000-7999/8000 
+  
+  ...（范围指定的数据）... 
+  --THIS_STRING_SEPARATES--
+  ```
+
+### 3.5 获取部分内容的范围请求
+
+在网络传输过程中为了解决大文件传输中断需要重新开始的问题，提供了一种恢复机制，通过指定下载的实体范围实现范围请求。
+
+![image-20220519200554801](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-5/202205192005891.png)
+
+范围请求的几种形式：
+
+```java
+//5001~10 000 字节
+Range: bytes=5001-10000
+//从 5001 字节之后全部的
+Range: bytes=5001-
+//从一开始到 3000 字节和 5000~7000 字节的多重范围
+Range: bytes=-3000, 5000-7000
+```
+
+### 3.6 内容协商返回最合适的内容
+
+在访问web网站时可能存在语言或者其他差异，导致同一个URI呈现出的页面是不同的，比如说当浏览器的默认语言为英语或中文，访问相同 URI 的 Web 页面时，则会显示对应的英语版或中文版的 Web 页面。这样的机制称为内容协商（Content Negotiation）
+
+> 内容协商机制是指客户端和服务器端就响应的资源内容进行交涉，然后提供给客户端最为适合的资源。内容协商会以响应资源的语言、字符集、编码方式等作为判断的基准。
+
+内容协商技术有以下 3 种类型：
+
+1. 服务器驱动协商（Server-driven Negotiation）
+
+   由服务器端进行内容协商。以请求的首部字段为参考，在服务器端自动处理。但对用户来说，以浏览器发送的信息作为判定的依据，并不一定能筛选出最优内容。
+
+2. 客户端驱动协商（Agent-driven Negotiation）
+
+   由客户端进行内容协商的方式。用户从浏览器显示的可选项列表中手动选择。还可以利用 JavaScript 脚本在 Web 页面上自动进行上述选择。比如按 OS 的类型或浏览器类型，自行切换成 PC 版页面或手机版页面。
+
+3. 透明协商（Transparent Negotiation）
+
+   是服务器驱动和客户端驱动的结合体，是由服务器端和客户端各自进行内容协商的一种方法。
+
+## 第4章——返回结果的 HTTP 状态码
+
+### 4.1 状态码告知从服务器端返回的请求结果
+
+状态码的职责是当客户端向服务器端发送请求时，描述返回的请求结果。借助状态码，用户可以知道服务器端是正常处理了请求，还是出
+现了错误。状态码类别如下:
+
+|      | 类别                             | 原因短语                   |
+| ---- | -------------------------------- | -------------------------- |
+| 1XX  | Informational（信息性状态码）    | 接收的请求正在处理         |
+| 2XX  | Success（成功状态码）            | 请求正常处理完毕           |
+| 3XX  | Redirection（重定向状态码）      | 需要进行附加操作以完成请求 |
+| 4XX  | Client Error（客户端错误状态码） | 服务器无法处理请求         |
+| 5XX  | Server Error（服务器错误状态码） | 服务器处理请求出错         |
+
+记录在案的状态码种类繁多，但是只需要了解具有代表性的状态码即可。
+
+### 4.2 2XX 成功
+
