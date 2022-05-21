@@ -23,8 +23,9 @@ public class K范围内有序的排序问题 {
             arr[i] = heap.poll();
             heap.add(arr[index++]);
         }
-        while (!heap.isEmpty())
+        while (!heap.isEmpty()) {
             arr[i++] = heap.poll();
+        }
     }
 
     static class comp implements Comparator<Integer> {//比较器

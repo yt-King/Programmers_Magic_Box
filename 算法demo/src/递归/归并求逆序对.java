@@ -10,7 +10,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class 归并求逆序对 {
     public static int process(int arr[], int l, int r){
-        if(l==r) return 0;
+        if(l==r) {
+            return 0;
+        }
         int mid=(l+r)/2;
         return process(arr,l,mid)+process(arr,mid+1,r)+merge(arr,l,mid,r);
     }
