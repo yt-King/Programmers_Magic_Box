@@ -36,19 +36,22 @@ public class 矩阵的最小路径和_压缩空间方法 {
 
     /**
      * 优化：压缩空间
-     *
+     * 压缩空间几乎可以应用到所有需要二维动态规划的面试题目中
+     * 一个数组滚动更新的方式节省了大量空间
      * @param arr
      */
     public static int minPathSum2(int[][] arr) {
         int n = arr[0].length;
         int[] dp = new int[n];
         dp[0] = arr[0][0];
-        for (int i = 1; i < n; i++) {
+        for (int i = 1; i < n; i++) {//第一行基础操作
             dp[i] = dp[i - 1] + arr[0][i];
         }
         for (int i = 1; i < arr.length; i++) {
+            //剩下的行每次先更新dp数组的第一个值
             dp[0] += arr[i][0];
             for (int j = 1; j < n; j++) {
+                //然后便利这行的剩下几列，当前位置是还没更新的相当于是上面的格子，左边是已经更新的相当于是左边的格子
                 dp[j] = Math.min(dp[j], dp[j - 1]) + arr[i][j];
             }
         }
