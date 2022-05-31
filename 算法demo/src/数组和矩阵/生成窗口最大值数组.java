@@ -39,6 +39,7 @@ public class 生成窗口最大值数组 {
      * 首先生成双端队列qmax。其次，在窗口滑动时，判断队首元素是否为刚刚退出滑动窗口的元素，是则将其弹出队首。
      * 然后在窗口初始化或滑动的时候，判断新元素与qmax队尾元素的大小（qmax为空则直接放入新元素）。
      * 如果新元素大，则qmax队尾元素一直poll，直到qmax为空或者队尾元素大于等于新元素，再将新元素放入qmax队尾。
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -73,8 +74,10 @@ public class 生成窗口最大值数组 {
                 result[index++] = arr[temp.peekFirst()];
             }
         }
-        for (int i = 0; i < result.length; i++) {
-            System.out.println(result[i] + " ");
+        StringBuilder sb = new StringBuilder();
+        for (int i : result) {
+            sb.append(i).append(" ");
         }
+        System.out.println(sb.toString());
     }
 }
