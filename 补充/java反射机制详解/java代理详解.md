@@ -247,6 +247,12 @@ public class DynamicProxyUser  implements InvocationHandler {
 - CGLIB 动态代理中，**代理类是继承了被代理类（或服务类），即 `enhancer.setSuperclass(Service.class)`**。所以，被代理类的`final` 方法或 `final` 类，不能被代理类继承，也就不能通过代理的方式调用。
 - 代理类将委托类作为自己的父类，并为其中的非 `final` 委托方法创建两个方法，一个是与委托方法签名相同的方法，它在方法中会通过 `super` 调用委托方法；另一个是代理类独有的方法。在代理方法中，它会判断是否存在实现了 `MethodInterceptor` 接口的对象，若存在则将调用 `intercept` 方法对委托方法进行代理。
 
+## 3.3-FastClass机制
+
+CGLIB 动态代理中，方法的调用并不是通过反射来完成的，而是通过 `FastClass` 机制来实现对被拦截方法的调用。
+
+**`FastClass` 机制中，不使用反射类（`Constructor` 或 `Method`）来调用委托类的方法，而是动态生成一个新的类（继承 `FastClass`），并为委托类的方法调用语句建立索引，使用者根据方法签名（方法名 + 参数类型）得到索引值，再通过索引值调用相应的方法。**
+
 ## JDK动态代理和CGLIB动态代理的对比
 
 1. JDK 动态代理时，需要委托类（被代理类）实现了一个接口。CGLIB 动态代理时，则无此要求，因为代理类是继承的委托类。
