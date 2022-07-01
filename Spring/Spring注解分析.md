@@ -40,3 +40,44 @@
 
 ## 3.@componentScan
 
+### includeFilters（包含规则）&excludeFilters（排除规则）
+
+![image-20220629222200475](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202206292222562.png)
+
+FilterType为一个[枚举类](https://so.csdn.net/so/search?q=枚举类&spm=1001.2101.3001.7020),总共有5个值,也就是说type总共有5个可选值
+
+```java
+public enum FilterType {
+	ANNOTATION,//按照注解方式
+	ASSIGNABLE_TYPE,//按照指定类型的方式
+	ASPECTJ,//使用ASPECTJ表达式的方式
+	REGEX,//利用正则表达式进行指定
+	CUSTOM//自己实现TypeFilter接口进行自定义规则(如下面的代码)
+}
+//示例：
+// includeFilters 用法 包含Animal.class类可以被扫描到，包括其子类
+@ComponentScan(value = "com.spring"
+  includeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {Animal.class}
+)}
+)
+
+// excludeFilters 用法 排除包含@Controller注解的类
+@ComponentScan(value = "com.spring"
+        , excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ANNOTATION
+                , classes = {Controller.class}
+        ),
+
+})
+```
+
+### 扫描索引
+
+[META-INF/spring.factories文件的作用是什么](https://blog.csdn.net/qq_35549286/article/details/109047777)
+
+## 4.@Conditional
+
+![image-20220701145640072](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207011456218.png)
+
+> [一文了解@Conditional注解说明和使用](https://www.cnblogs.com/cxuanBlog/p/10960575.html)
+
