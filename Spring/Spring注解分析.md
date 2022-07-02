@@ -81,3 +81,71 @@ public enum FilterType {
 
 > [一文了解@Conditional注解说明和使用](https://www.cnblogs.com/cxuanBlog/p/10960575.html)
 
+## 5.@Autowired 
+
+### 在属性上使用*@Autowired*
+
+*@Autowired*可以直接应用到类的属性上，即使该属性的类型不是public、同时也没有为其定义setter方法，也不会影响自动装配的功能。Spring在创建Bean的过程中，会根据字段的类型和名字从Spring容器中找到所匹配的Bean对象进行赋值。
+
+### 在setter方法上使用*@Autowired*
+
+与在属性上使用*@Autowired*来完成自动装配相比较，在setter上使用*@Autowired*没有什么明显的不 同。当我们在装配某个属性的同时还希望执行某些逻辑操作时，往往会这么做。Spring会**根据入参参数信息从容器中找到所匹配的Bean对象传给入参**，通过set方法中给属性赋值，从而达到了set注入的目的，需要注意的是这个注解**还可以加在普通方法**上，不一定非得是set方法。
+
+### 在构造函数上使用*@Autowired*
+
+当在某个构造参数上使用*@Autowired* 时表示该Bean在创建时会使用这个构造方法来实例化得到一个对象，并且Spring会根据该构造方法入参参数的类型和名字，**从Spring容器中找到所匹配的Bean对象传给入参进行赋值**，从而达到构造方法注入的目的。值得注意的是，在较新的Spring版本中完全可以省略在构造函数上声明的*@Autowired*注解，但是**只限于只有一个构造方法**的情况下，如果有多个带参数的构造方法需要**添加@Autowired注解指定构造方法**。
+
+### NoSuchBeanDefinitionException
+
+NoSuchBeanDefinitionException直译为：没有找到相关的bean。根据实际情况不同，解决这个异常的方法分为两种：
+
+- 第一种是前期我们容易犯的错误，即我们的确需要这样的一个bean，而且该bean也是由我们提供的，但忘记使用*@Component* 相关注解声明了。解决的方法当然是声明该类型的bean即可。
+
+- 第二种是该bean可以有，也可以没有。那么此时则可以将*@Autowired* 的*required* 属性设置为*false* :
+
+  ```java
+  @Service
+  public class BarService {
+      @Autowired(required = false)
+      BarRepository barRepository;
+  }
+  ```
+
+### NoUniqueBeanDefinitionException
+
+默认情况下`@Autowired`注解是根据**类型**来完成自动装配的，在装配的过程中如果同一类型的bean存在多个，则会发生*NoUniqueBeanDefinitionException*异常。
+
+### 自定义装配限定器
+
+Spring还允许我们将@Autowired写在其他注解上，使得该注解也拥有@Autowired注解的相关功能。
+
+### static
+
+static字段或方法是不会进行依赖注入的。
+
+### 为什么Spring团队推荐总是在您的bean中使用构造函数建立依赖注入？
+
+<img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207021432754.png" alt="image-20220702143255662" style="zoom:80%;" />
+
+@Autowired 可以对**成员变量、方法（一般是set方法，当然其他方法也可以）以及构造方法**三种方式操作（另外还可以加在参数前面，不过没什么用，以及加在其他注解上自定义注解）。@Autowired注入bean，**相当于在配置文件中配置bean**。而对构造方法，就相当于是使用构造函数进行依赖注入。通过一个例子说明**@Autowired和构造方法执行顺序差异**：
+
+![image-20220702144327923](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207021443995.png)
+
+> Java变量的初始化顺序：静态变量或静态语句块–>实例变量或初始化语句块–>构造方法–>@Autowired
+
+```
+补充：为什么要加final？
+网上解释：
+
+1.spring配置默认的bean的scope是singleton，也就是启动后一直有。通过设置bean的scope属性为prototype来声明该对象为动态创建。但是，如果你的service本身是singleton，注入只执行一次。@Autowired本身就是单例模式，只会在程序启动时执行一次，即使不定义final也不会初始化第二次，所以这个final是没有意义的吧。可能是为了防止，在程序运行的时候，又执行了一遍构造函数
+
+2.或者是更容易让人理解的意思，加上final只会在程序启动的时候初始化一次，并且在程序运行的时候不会再改变。
+```
+
+## 6.@Lazy
+
+![image-20220702155412998](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207021554085.png)
+
+## 7.@Resource
+
+![image-20220702161759857](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207021617919.png)
