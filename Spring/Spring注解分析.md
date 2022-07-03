@@ -34,11 +34,24 @@
 ## 2.@bean
 
 > Spring的@Bean注解用于告诉方法，产生一个Bean对象，然后这个Bean对象交给Spring管理。 产生这个Bean对象的方法Spring只会调用一次，随后这个Spring将会将这个Bean对象放在自己的IOC容器中。@Bean明确地指示了一种方法，什么方法呢？产生一个bean的方法，并且交给Spring容器管理；从这我们就明白了为啥@Bean是放在方法的注释上了，因为它很明确地告诉被注释的方法，你给我产生一个Bean，然后交给Spring容器，剩下的你就别管了。记住，@Bean就放在方法上，就是让方法去产生一个Bean，然后交给Spring容器。**@Component , @Repository , @ Controller , @Service 这些注解只局限于自己编写的类，而@Bean注解能把第三方库中的类实例加入IOC容器中并交给spring管理。@Bean注解的另一个好处就是能够动态获取一个Bean对象，能够根据环境不同得到不同的Bean对象。**
+
+> [@Bean是否要跟@Configuration配合使用](https://blog.csdn.net/AwayFuture/article/details/105845005)
 >
+> 结论：@Bean + @Component，虽然@Bean注解的方法返回的实例已经注入到SpringIOC容器中，但是每次调用@Bean注解的方法时，都会创建新的对象实例bean返回，并不会从IOC容器中获取。
+>
+>
+>     因此，要实现在@Bean注解方法时，要求从IOC容器中返回实例bean而不是每次都新创建一个对象，则@Bean要跟@Configuration配合使用
+> **tips**:@Bean的autowired参数已经不建议使用了，因为这个属性是可以将这个bean里面的属性根据要求去进行注入，但是没有@Autowired注解那么灵活，@Autowired加在bean的哪个属性上就注入哪个，但是autowired参数则全部注入，不够灵活，所以默认是不开启的（NO）。
 
 ![image-20220628211438488](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202206282114832.png)
 
 ## 3.@componentScan
+
+@ComponentScan主要就是**定义扫描的路径**从中找出标识了**需要装配的类**自动装配到spring的bean容器中，**主要作用是：**
+
+> 用于完成组件扫描，指定 spring 扫描范围，通过它指定的路径，Spring 会从被指定的包及其下级包扫描 @Component 及其子类注释的类，用于 Spring 容器自动装配，也就是告诉 Spring 从哪里找到 bean。
+>
+> **不过需要注意，其仅仅是指定了要扫描的包，并没有装配其中的类，这个真正装配这些类是 @EnableAutoConfiguration 完成的。**
 
 ### includeFilters（包含规则）&excludeFilters（排除规则）
 
@@ -149,3 +162,13 @@ static字段或方法是不会进行依赖注入的。
 ## 7.@Resource
 
 ![image-20220702161759857](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207021617919.png)
+
+## 8.@Configuration 
+
+![image-20220703102211365](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207031022499.png)
+
+> **当proxyBeanMethods为true时（默认为true），调用配置类组件创建bean的方法，获得的bean是从容器中直接获取的，而为false时，则是重新创建。这其实是springboot底层的两种模式Full模式和Lite模式，当我们配置 类组件之间无依赖关系时用Lite模式加速容器启动过程，减少判断，配置类组件之间有依赖关系，方法会被调用得到之前单实例组件，用Full模式。**
+
+## 9.@Import
+
+[spring注解之@Import注解的三种使用方式](https://juejin.cn/post/6844904035212853255#heading-3)
