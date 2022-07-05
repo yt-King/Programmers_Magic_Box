@@ -1,6 +1,6 @@
- 
+#  Spring常见问题总结
 
-# Spring源码分析
+> ### 最重要的两个概念：[面试被问了几百遍的 IoC 和 AOP ，还在傻傻搞不清楚？](https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247486938&idx=1&sn=c99ef0233f39a5ffc1b98c81e02dfcd4&chksm=cea24211f9d5cb07fa901183ba4d96187820713a72387788408040822ffb2ed575d28e953ce7&token=1736772241&lang=zh_CN#rd)
 
 ## 1.Spring，SpringBoot和SpringMVC的区别
 
@@ -130,3 +130,55 @@ Spring 解决循环依赖的核心就是提前暴露对象，而提前暴露的�
 | request        | 每次HTTP请求都会创建一个新的Bean，该作用域仅适用于WebApplicationContext环境 |
 | session        | 同一个HTTP Session共享一个Bean，不同Session使用不同的Bean，仅适用于WebApplicationContext环境 |
 | global-session | 一般用于Portlet应用环境，该作用域仅适用于WebApplicationContext环境 |
+
+## 14.Spring类型转化有哪些方式
+
+> Spring早在1.0（2004年发布，2003年孵化中）的时候，就有了类型转换功能模块。此模块存在的必要性不必多说，最初，Spring做类型转换器是基于Java标准的`java.beans.PropertyEditor`这个API去扩展实现的，直到Spring 3.0后才得以出现更好替代方案（Spring 3.0发布于2009 年12月）。
+
+**[Spring类型转化](https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzI0MTUwOTgyOQ==&action=getalbum&album_id=1727592481828978689&scene=173&from_msgid=2247491095&from_itemidx=1&count=3&nolastread=1#wechat_redirect)**
+
+1. **PropertyEditor**
+
+   `PropertyEditor`位于java.beans包中，这个包里面的类都是设计为Java GUI程序（AWT）服务的,JDK对PropertyEditor接口提供了一个默认实现`java.beans.PropertyEditorSupport`，因此我们若需扩展此接口，仅需继承此类，根据需要复写`getAsText/setAsText`这两个方法即可，Spring无一例外都是这么做的。Spring内置的**「所有扩展」**均是基于PropertyEditorSupport来实现的，因此也**「都是」**线程不安全的。
+
+   [Spring早期类型转换，基于PropertyEditor实现](https://mp.weixin.qq.com/s?__biz=MzI0MTUwOTgyOQ==&mid=2247490683&idx=1&sn=8a5e9a23c4d9226b19a605a478a51a3d&chksm=e90b28d1de7ca1c74736687774254574c41b4e4b78c5c3e7a034713dcfa800f7024c6bf8250e&scene=178&cur_album_id=1727592481828978689#rd)
+
+   [搞定收工，PropertyEditor就到这](https://mp.weixin.qq.com/s?__biz=MzI0MTUwOTgyOQ==&mid=2247490866&idx=1&sn=9f9dafce23d861dc93dc5600852ab017&chksm=e90b2998de7ca08eb0332321168e673b142f8673243d237b780c248061a4764e3e8c4129345d&scene=178&cur_album_id=1727592481828978689#rd)
+
+   >  PropertyEditor设计缺陷：
+   >
+   > 1. 职责不单一：该接口有非常多的方法，但只用到2个而已
+   > 2. 类型不安全：setValue()方法入参是Object，getValue()返回值是Object，依赖于约定好的类型**强转**，不安全
+   > 3. 线程不安全：依赖于setValue()后getValue()，实例是线程不安全的
+   > 4. 语义不清晰：从语义上根本不能知道它是用于类型转换的组件
+   > 5. **只能用于String类型**：它只能进行**String <-> 其它类型**的转换，而非更灵活的**Object <-> Object**
+
+2. **ConversionService**
+
+   为了解决PropertyEditor作为类型转换方式的设计缺陷，Spring 3.0版本重新设计了一套类型转换接口，有3个核心接口：
+
+   1. `Converter<S, T>`：Source -> Target类型转换接口，适用于1:1转换
+
+   2. `ConverterFactory<S, R>`：Source -> R类型转换接口，适用于1:N转换
+
+   3. `GenericConverter`：更为通用的类型转换接口，适用于N:N转换
+
+   4. - 注意：就它没有泛型约束，因为是通用
+
+   另外，还有一个条件接口`ConditionalConverter`，可跟上面3个接口搭配组合使用，提供前置条件判断验证。
+
+   [上新了Spring，全新一代类型转换机制](https://mp.weixin.qq.com/s?__biz=MzI0MTUwOTgyOQ==&mid=2247491031&idx=1&sn=a87b6566a4bcc87002e211106878b705&chksm=e90b297dde7ca06b8ffa585aa1bb0a8050286f9b29c09b0cd95569e13b8426e261d9949bd480&scene=178&cur_album_id=1727592481828978689#rd)
+
+   [抹平差异，统一类型转换服务ConversionService](https://mp.weixin.qq.com/s?__biz=MzI0MTUwOTgyOQ==&mid=2247491189&idx=1&sn=d360db5d17833144b1139ad0af58e94b&chksm=e90b2adfde7ca3c9ef0e5b4f28b3dc47aad518e4dac5efae0ca72493d4eb9e2b324fdc9bbd4b&scene=178&cur_album_id=1727592481828978689#rd)
+
+3. **TypeConverter**
+
+   `Spring`同时存在两大类型转换体系：`PropertyEditor`体系和`ConversionService`体系，那么什么时候使用前者，什么时候使用后者呢？为了用户更方便地进行类型转换，`Spring`提供了`TypeConverterDelegate`类作为工具类，该类作为门面类，屏蔽了两大转换体系的使用细节，提供简单的对外接口。这个问题的答案，也可以从这个工具类中找到。
+
+   [Spring Core源码导读系列之TypeConverter](https://juejin.cn/post/6873769380095492109#heading-18)
+
+总结：从宏观的角度看，`Spring`类型转换系统可以分为4个模块：`PropertyEditor`体系、`ConversionService`体系、`TypeConverterDelegate`工具类、`TypeConverter`接口。各模块之间的关系如下图：
+
+![img](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-%C2%B76/202207041449077.webp)
+
+> `TypeConverter`是委托`TypeConverterDelegate`工具类完成转换逻辑的，`TypeConverterDelegate`工具类又是委托`PropertyEditor`体系和`ConversionService`体系完成转换逻辑的。有一点需要注意的是，`TypeConverterDelegate`类并不直接与`ConversionService`关联，而是通过`PropertyEditorRegistrySupport`间接关联。这样做的目的是为了可配置，毕竟`TypeConverterDelegate`类仅仅是一个工具类，不适合可配置。
