@@ -414,3 +414,64 @@ private void method1() {
 - 正确的设置 `@Transactional` 的 `rollbackFor` 和 `propagation` 属性，否则事务可能会回滚失败;
 - 被 `@Transactional` 注解的方法所在的类必须被 Spring 管理，否则不生效；
 - 底层使用的数据库必须支持事务机制，否则不生效。
+
+## @Transactional 注解失效场景
+
+#### 1、@Transactional 应用在非 public 修饰的方法上
+
+![在这里插入图片描述](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207060919667.webp)
+
+之所以会失效是因为在Spring AOP 代理时，如上图所示 `TransactionInterceptor` （事务拦截器）在目标方法执行前后进行拦截，`DynamicAdvisedInterceptor`（CglibAopProxy 的内部类）的 intercept 方法或 `JdkDynamicAopProxy` 的 invoke 方法会间接调用 `AbstractFallbackTransactionAttributeSource`的 `computeTransactionAttribute` 方法，获取Transactional 注解的事务配置信息。
+
+```
+protected TransactionAttribute computeTransactionAttribute(Method method,
+    Class<?> targetClass) {
+        // Don't allow no-public methods as required.
+        if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
+        return null;
+}
+```
+
+此方法会检查目标方法的修饰符是否为 public，不是 public则不会获取@Transactional 的属性配置信息。
+
+> **注意：`protected`、`private` 修饰的方法上使用 `@Transactional` 注解，虽然事务无效，但不会有任何报错，这是我们很容犯错的一点。**
+
+#### 2、@Transactional 注解属性 propagation 设置错误
+
+错误配置以下三种propagation可能胡导致事务不回滚：
+
+- `TransactionDefinition.PROPAGATION_SUPPORTS`：如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式继续运行。
+- `TransactionDefinition.PROPAGATION_NOT_SUPPORTED`：以非事务方式运行，如果当前存在事务，则把当前事务挂起。 
+- `TransactionDefinition.PROPAGATION_NEVER`：以非事务方式运行，如果当前存在事务，则抛出异常。
+
+#### 3、@Transactional 注解属性 rollbackFor 设置错误
+
+`rollbackFor` 可以指定能够触发事务回滚的异常类型。Spring默认抛出了未检查`unchecked`异常（继承自 `RuntimeException` 的异常）或者 `Error`才回滚事务；其他异常不会触发回滚事务。如果在事务中抛出其他类型的异常，但却期望 Spring 能够回滚事务，就需要指定 **rollbackFor**属性。
+
+![在这里插入图片描述](https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2020/3/19/170f0e025b17b3ca~tplv-t2oaga2asx-zoom-in-crop-mark:3024:0:0:0.awebp)
+
+#### 4、同一个类中方法调用，导致@Transactional失效
+
+举例如下：
+
+![image-20220706092335433](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207060923522.png)
+
+可以看到在test方法上加了注解，test方法又调用了一个加了注解的a()方法，a()方法按道理说是以非事务的方式运行，如果当前存在事务，则抛出异常。可是运行结果并没有抛出异常，也就是说当前的**注解失效**了（但是test的事务还是生效的）。失效的原因就在于加了事务注解以后也是通过AOP生成了一个代理类，代理类中的方法（a方法）是通过target对象去调用的，而target对象是**普通对象**，并不是**代理类生成的对象**，所以说我们在**调用a方法的时候是以普通对象调用而不是代理对象，不是代理对象的话就不会去判断是否加了事务注解等等切面操作，就直接走方法里面的内容**，所以这个时候注解就失效了。
+
+> 修改方法：将方法独立出来变成一个新的类，然后调用该方法走的就是代理对象。或者直接在原来的类中自己注入自己
+>
+> （用@Autowired注解自己本身）。
+
+总结：思考方法上的事务注解有没有用，就去看这个方法被**调用的时候是不是代理对象**，只有代理对象才会走事务。
+
+#### 5、异常被 catch“吃了”导致@Transactional失效
+
+`spring`的事务是在调用业务方法之前开始的，业务方法执行完毕之后才执行`commit` or `rollback`，事务是否执行取决于是否抛出`runtime异常`。如果抛出`runtime exception` 并在你的业务方法中没有catch到的话，事务会回滚。
+
+#### 6、数据库引擎不支持事务
+
+这种情况出现的概率并不高，事务能否生效数据库引擎是否支持事务是关键。常用的MySQL数据库默认使用支持事务的`innodb`引擎。一旦数据库引擎切换成不支持事务的`myisam`，那事务就从根本上失效了。
+
+#### 7、多线程调用（多数据源？）
+
+spring的事务是通过**数据库连接**来实现的。当前线程中保存了一个**map**，**key是数据源，value是数据库连接。**同一个事务，其实是指同一个数据库连接，只有拥有同一个数据库连接才能同时提交和回滚。如果在不同的线程，拿到的数据库连接肯定是不一样的，所以是不同的事务。**多数据源**情况下造成的事务失效可能也有这个原因。
