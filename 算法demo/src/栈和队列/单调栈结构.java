@@ -32,13 +32,18 @@ public class 单调栈结构 {
         int[][] res = new int[array.length][2];
         Stack<Integer> stack = new Stack<>();
         for (int i = 0; i < array.length; i++) {
+            //如果要找到每一个 i 位置左边和右边离 i 位置最近且值比 arr[i] 小的位置，那么要求stack的值是单调递增的
             while (!stack.isEmpty() && array[stack.peek()] > array[i]) {
+                //在stack不为空时，如果要加入的值破坏了单调递增的结构，那么就要弹出stack的最后一个值，直到stack的值是单调递增的
                 int popIndex = stack.pop();
+                //记录弹出的位置的左右边离i位置的最近的位置，左边就是弹出后栈顶的值，因为是递增的，右边就是i位置的值
                 res[popIndex][0] = stack.isEmpty() ? -1 : stack.peek();
                 res[popIndex][1] = i;
             }
+            //在不破坏单调递增的结构的情况下，将i位置的值加入到栈中
             stack.push(i);
         }
+        //遍历完数组后，如果栈不为空，那么就要弹出栈中的所有值，记录下来
         while (!stack.isEmpty()) {
             int popIndex = stack.pop();
             res[popIndex][0] = stack.isEmpty() ? -1 : stack.peek();
