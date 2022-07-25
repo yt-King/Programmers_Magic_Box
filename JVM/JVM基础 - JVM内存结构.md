@@ -506,6 +506,8 @@ private static void alloc() {
 
 ### 5.1 概要
 
+![image-20220724174011734](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207241740878.png)
+
 - 方法区（Method Area）与 Java 堆一样，是所有线程共享的**内存区域。**
 - 虽然 Java 虚拟机规范把方法区描述为堆的一个逻辑部分，但是它却有一个别名叫 Non-Heap（非堆），目的应该是与 Java 堆区分开。
 - **运行时常量池**（Runtime Constant Pool）是方法区的一部分。Class 文件中除了有类的版本/字段/方法/接口等描述信息外，还有一项信息是常量池（Constant Pool Table），用于存放编译期生成的各种字面量和符号引用，这部分内容将类在加载后进入方法区的运行时常量池中存放。运行期间也可能将新的常量放入池中，这种特性被开发人员利用得比较多的是 `String.intern()`方法。受方法区内存的限制，当常量池无法再申请到内存时会抛出 `OutOfMemoryErro`r 异常。
