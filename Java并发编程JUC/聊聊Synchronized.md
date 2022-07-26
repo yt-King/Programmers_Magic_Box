@@ -4,7 +4,27 @@
 
 [Java锁与线程的那些事](https://tech.youzan.com/javasuo-yu-xian-cheng-de-na-xie-shi/)
 
-# 1.Synchronized
+## 带着BAT大厂的面试问题去理解Synchronized
+
+- Synchronized可以作用在哪里? 分别通过对象锁和类锁进行举例。
+- Synchronized本质上是通过什么保证线程安全的? 分三个方面回答：加锁和释放锁的原理，可重入原理，保证可见性原理。
+- Synchronized由什么样的缺陷?  Java Lock是怎么弥补这些缺陷的。
+- Synchronized和Lock的对比，和选择?
+- Synchronized在使用时有何注意事项?
+- Synchronized修饰的方法在抛出异常时,会释放锁吗?
+- 多个线程等待同一个snchronized锁的时候，JVM如何选择下一个获取锁的线程?
+- Synchronized使得同时只有一个线程可以执行，性能比较差，有什么提升的方法?
+- 我想更加灵活的控制锁的释放和获取(现在释放锁和获取锁的时机都被规定死了)，怎么办?
+- 什么是锁的升级和降级? 什么是JVM里的偏斜锁、轻量级锁、重量级锁?
+- 不同的JDK中对Synchronized有何优化?
+
+## Synchronized的使用
+
+在应用Sychronized关键字时需要把握如下注意点：
+
+- 一把锁只能同时被一个线程获取，没有获得锁的线程只能等待；
+- 每个实例都对应有自己的一把锁(this),不同实例之间互不影响；例外：锁对象是*.class以及synchronized修饰的是static方法的时候，所有对象公用同一把锁
+- synchronized修饰的方法，**无论方法正常执行完毕还是抛出异常**，都会释放锁
 
 参考：[synchronized原理及其应用](https://juejin.cn/post/6844904114061590535#heading-5)
 
@@ -12,12 +32,12 @@
 
 在JVM中，对象在内存中的布局分为三块区域：对象头、实例数据和对齐填充。
 
-<img src="%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220126151007485.png" alt="image-20220126151007485" style="zoom:80%;" />
+![image-20220726132834806](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261328957.png)
 
 - 对象头
 
   - **Mark Word（标记字段）**：默认存储对象的HashCode，分代年龄和锁标志位信息。它会根据对象的状态复用自己的存储空间，也就是说在运行期间Mark Word里存储的数据会随着锁标志位的变化而变化。
-  - **Klass Point（类型指针）**：对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。
+  - **class Point（类型指针）**：对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。
 
 - 实例数据
 
@@ -31,13 +51,13 @@
 
 运行期间，Mark Word里存储的数据随锁标志位的变化而变化，可能存在如下4种数据。
 
-![image-20220126151804800](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220126151804800.png)
+![image-20220726133748219](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261337316.png)
 
 ## 1.2-底层实现
 
 ### 1.2.1-Monitor 机制
 
-monitor 的重要特点是，同一个时刻，只有一个 进程/线程 能进入 monitor 中定义的临界区，这使得 monitor 能够达到互斥的效果。但仅仅有互斥的作用是不够的，无法进入 monitor 临界区的 进程/线程，它们应该被阻塞，并且在必要的时候会被唤醒。显然，monitor 作为一个同步工具，也应该提供这样的管理 进程/线程 状态的机制。想想我们为什么觉得 semaphore 和 mutex 在编程上容易出错，因为我们需要去亲自操作变量以及对 进程/线程 进行阻塞和唤醒。monitor 这个机制之所以被称为“更高级的原语”，那么它就不可避免地需要对外屏蔽掉这些机制，并且在内部实现这些机制，使得使用 monitor 的人看到的是一个简洁易用的接口。
+monitor 的重要特点是，**同一个时刻，只有一个 进程/线程 能进入 monitor 中定义的临界区**，这使得 monitor 能够达到互斥的效果。但仅仅有互斥的作用是不够的，无法进入 monitor 临界区的 进程/线程，它们应该被阻塞，并且在必要的时候会被唤醒。显然，monitor 作为一个同步工具，也应该提供这样的管理 进程/线程 状态的机制。monitor 这个机制之所以被称为“更高级的原语”，那么它就不可避免地需要对外屏蔽掉这些机制，并且在内部实现这些机制，使得使用 monitor 的人看到的是一个简洁易用的接口。
 
 ### 1.2.2-monitor 基本元素
 
@@ -45,13 +65,13 @@ monitor 的重要特点是，同一个时刻，只有一个 进程/线程 能进
 2. monitor 对象及锁
 3. 条件变量以及定义在 monitor 对象上的 wait，signal 操作。
 
-使用 monitor 机制的目的主要是为了互斥进入临界区，为了做到能够阻塞无法进入临界区的 进程/线程，还需要一个 monitor object 来协助，这个 monitor object 内部会有相应的数据结构，例如列表，来保存被阻塞的线程；同时由于 monitor 机制本质上是基于 mutex 这种基本原语的，所以 monitor object 还必须维护一个基于 mutex 的锁。 此外，为了在适当的时候能够阻塞和唤醒 进程/线程，还需要引入一个条件变量，这个条件变量用来决定什么时候是“适当的时候”，这个条件可以来自程序代码的逻辑，也可以是在monitor object 的内部，总而言之，程序员对条件变量的定义有很大的自主性。不过，由于 monitor object 内部采用了数据结构来保存被阻塞的队列，因此它也必须对外提供两个 API 来让线程进入阻塞状态以及之后被唤醒，分别是 wait 和 notify。
+使用 monitor 机制的目的主要是为了互斥进入临界区，为了做到能够阻塞无法进入临界区的 进程/线程，还需要一个 monitor object 来协助，这个 monitor object 内部会有相应的数据结构，例如列表，来保存被阻塞的线程；同时由于 monitor 机制本质上是**基于 mutex 这种基本原语的**，所以 monitor object 还必须维护一个基于 mutex 的锁。 此外，为了在适当的时候能够阻塞和唤醒 进程/线程，还需要引入一个条件变量，这个条件变量用来决定什么时候是“适当的时候”，这个条件可以来自程序代码的逻辑，也可以是在monitor object 的内部，总而言之，程序员对条件变量的定义有**很大的自主性**。不过，由于 monitor object 内部采用了数据结构来保存被阻塞的队列，因此它也必须对外提供两个 API 来让线程进入阻塞状态以及之后被唤醒，分别是 wait 和 notify。
 
 ### 1.2.3-临界区的圈定
 
 正常去使用Synchronized一般都是用在下面这几种场景：
 
-[synchronized 加锁 this 和 class 的区别！](https://juejin.cn/post/6991428725980037151#heading-8)
+[synchronized 加锁 this 和 class 的区别！](https://juejin.cn/post/6991428725980037151#heading-8)：当**使用 synchronized 加锁 class 时，无论共享一个对象还是创建多个对象，它们用的都是同一把锁**，而**使用 synchronized 加锁 this 时，只有同一个对象会使用同一把锁，不同对象之间的锁是不同的**。
 
 - 修饰实例方法，当 synchronized 修饰普通方法时，被修饰的方法被称为同步方法，其作用范围是整个方法，作用的对象是调用这个方法的对象。
 
@@ -84,7 +104,7 @@ monitor 的重要特点是，同一个时刻，只有一个 进程/线程 能进
 synchronzied 在使用时需要关联一个对象，而这个对象就是 monitor object。 monitor 的机制中，*monitor  object* 充当着维护 mutex以及定义 wait/signal API 来管理线程的阻塞和唤醒的角色。 Java 语言中的 *java.lang.Objec*t 类，便是满足这个要求的对象，任何一个 Java 对象都可以作为 monitor 机制的 *monitor object*。
  Java 对象存储在内存中，分别分为三个部分，即对象头、实例数据和对齐填充，而在其对象头中，保存了锁标识；同时，java.lang.Object 类定义了 wait()，notify()，notifyAll() 方法，这些方法的具体实现，依赖于一个叫 ObjectMonitor 模式的实现，这是 JVM 内部基于 C++ 实现的一套机制，基本原理如下所示：
 
-![image-20220126161941946](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220126161941946.png)
+![image-20220726141659754](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261416832.png)
 
 当一个线程需要获取 Object 的锁时，会被放入 EntrySet 中进行等待，如果该线程获取到了锁，成为当前锁的 owner。如果根据程序逻辑，一个已经获得了锁的线程缺少某些外部条件，而无法继续进行下去（例如生产者发现队列已满或者消费者发现队列为空），那么该线程可以通过调用 wait 方法将锁释放，进入 wait set 中阻塞进行等待，其它线程在这个时候有机会获得锁，去干其它的事情，从而使得之前不成立的外部条件成立，这样先前被阻塞的线程就可以重新进入 EntrySet去竞争锁。这个外部条件在 monitor 机制中称为条件变量。
 
@@ -94,7 +114,35 @@ synchronzied 在使用时需要关联一个对象，而这个对象就是 monito
 2. 如果你已经是这个monitor的owner了，你再次进入，就会把进入数+1.
 3. 同理，当他执行完**monitorexit**，对应的进入数就-1，直到为0，才可以被其他线程持有。
 
-### 1.2.6-总结
+ **可重入锁**：又名递归锁，是指在同一个线程在外层方法获取锁的时候，再进入该线程的内层方法会自动获取锁（前提锁对象得是同一个对象或者class），不会因为之前已经获取过还没释放而阻塞，这就是`Synchronized`的**重入性**。
+
+### 1.2.6-保证可见性的原理：内存模型和happens-before规则
+
+`Synchronized`的`happens-before`规则，即监视器锁规则：对同一个监视器的解锁，happens-before于对该监视器的加锁。
+
+```java
+public class MonitorDemo {
+    private int a = 0;
+
+    public synchronized void writer() {     // 1
+        a++;                                // 2
+    }                                       // 3
+
+    public synchronized void reader() {    // 4
+        int i = a;                         // 5
+    }                                      // 6
+}
+```
+
+该代码的happens-before关系如图所示：
+
+![image-20220726155304648](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261553758.png)
+
+在图中每一个箭头连接的两个节点就代表之间的happens-before关系，黑色的是通过程序顺序规则推导出来，红色的为监视器锁规则推导而出：线程A释放锁happens-before线程B加锁，蓝色的则是通过程序顺序规则和监视器锁规则推测出来happens-befor关系，通过传递性规则进一步推导的happens-before关系。
+
+**根据happens-before的定义中的一条:如果A happens-before B，则A的执行结果对B可见，并且A的执行顺序先于B。线程A先对共享变量A进行加一，由2 happens-before 5关系可知线程A的执行结果对线程B可见即线程B所读取到的a的值为1。**
+
+### 1.2.7-总结
 
 `synchronized` **同步语句块**的实现使用的是 `monitorenter` 和 `monitorexit` 指令，其中 `monitorenter` 指令指向同步代码块的开始位置，`monitorexit` 指令则指明同步代码块的结束位置。
 
@@ -106,7 +154,7 @@ synchronzied 在使用时需要关联一个对象，而这个对象就是 monito
 
 synchronized 在开始的时候是依靠操作系统的互斥锁来实现的，是个重量级操作，为了减少获得锁和释放锁带来的性能消耗，在 JDK 1.6中，引入了偏向锁和轻量级锁。锁一共有4中状态：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几种状态会随着竞争情况逐渐升级，但不能降级，目的是为了提高锁和释放锁的效率。
 
-![image-20220227142938482](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220227142938482.png)
+![image-20220726141703169](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261417277.png)
 
 ### 1.3.1-偏向锁
 
@@ -137,7 +185,7 @@ synchronized 在开始的时候是依靠操作系统的互斥锁来实现的，�
 3. 如果仍然活着，则遍历线程栈中所有的 Lock Record，如果能找到对应的 Lock Record 说明偏向的线程还在执行同步代码块中的代码。需要升级为轻量级锁，直接修改偏向线程栈中的Lock Record。
 4. 此时轻量级锁由原持有偏向锁的线程持有，继续执行其同步代码，而正在竞争的线程会进入自旋等待获得该轻量级锁。
 
-![image-20220126170957631](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220126170957631.png)
+![image-20220726141707270](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261417401.png)
 
 ### 1.3.2-轻量级锁
 
@@ -154,7 +202,7 @@ synchronized 在开始的时候是依靠操作系统的互斥锁来实现的，�
 2. 如果替换成功，整个同步过程就完成了。
 3. 如果替换失败，说明有其他线程尝试过获取该锁（此时锁已膨胀），那就要在释放锁的同时，唤醒被挂起的线程。
 
-![image-20220126192041646](%E8%81%8A%E8%81%8ASynchronized%E5%92%8CLock.images/image-20220126192041646.png)
+![image-20220726141713693](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207261417801.png)
 
 ### 1.3.3-重量级锁
 
