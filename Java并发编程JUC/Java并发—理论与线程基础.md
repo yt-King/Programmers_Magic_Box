@@ -750,7 +750,7 @@ synchronized 中的锁是非公平的，ReentrantLock 默认情况下也是非�
 
 ### join()
 
-> 在线程中调用另一个线程的 join() 方法，会将当前线程挂起，而不是忙等待，直到目标线程结束。
+> 在线程中调用另一个线程的 join() 方法，会将当前线程挂起（**不占用cpu**），而不是忙等待（**占用cpu**），直到目标线程结束。
 
 ```java
 public class JoinExample {
