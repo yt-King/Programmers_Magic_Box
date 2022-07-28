@@ -3,11 +3,19 @@
 ## 带着BAT大厂的面试问题去理解volatile
 
 - volatile关键字的作用是什么?
+
 - volatile能保证原子性吗?
+
 - 之前32位机器上共享的long和double变量的为什么要用volatile? 现在64位机器上是否也要设置呢?
+
+  > 因为long和double操作可分为高32位和低32位两部分，因此普通long或double类型读/写可能不是原子。因此，将共享long和double变量设置为volatile类型能保证任何情况下单次读/写操作的原子性。64位的要看jvm的具体实现。
+
 - i++为什么不能保证原子性?
+
 - volatile是如何实现可见性的? 内存屏障。
+
 - volatile是如何实现有序性的? happens-before等
+
 - 说下volatile的应用场景?
 
 ---
@@ -279,6 +287,8 @@ public void multiply() {
 
 ## 3.volatile底层的实现机制
 
+### 3.1 Lock指令
+
 如果把加入volatile关键字的代码和未加入volatile关键字的代码都生成汇编代码，会发现加入volatile关键字的代码会多出一个lock前缀指令。
 
 lock前缀指令实际相当于一个内存屏障，内存屏障提供了以下功能：
@@ -289,11 +299,81 @@ lock前缀指令实际相当于一个内存屏障，内存屏障提供了以下�
 >
 > 3 . 写入动作也会引起别的CPU或者别的内核无效化其Cache，相当于让新写入的值对别的线程可见。
 
-### 3.1 内存屏障
+在 Pentium 和早期的 IA-32 处理器中，lock 前缀会使处理器执行当前指令时产生一个 LOCK# 信号，会对总线进行锁定，其它 CPU 对内存的读写请求都会被阻塞，直到锁释放。 后来的处理器，加锁操作是由高速缓存锁代替总线锁来处理。 因为**锁总线的开销比较大**，锁总线期间其他 CPU 没法访问内存。 这种场景多缓存的数据一致通过缓存一致性协议(MESI)来保证。
+
+#### 缓存一致性
+
+> 缓存是分段(line)的，一个段对应一块存储空间，称之为缓存行，它是 CPU 缓存中可分配的最小存储单元，大小 32 字节、64 字节、128 字节不等，这与 CPU 架构有关，通常来说是 64 字节。 LOCK# 因为锁总线效率太低，因此使用了多组缓存。 为了使其行为看起来如同一组缓存那样。因而设计了 缓存一致性协议。 缓存一致性协议有多种，但是日常处理的大多数计算机设备都属于 " 嗅探(snooping)" 协议。 所有内存的传输都发生在一条共享的总线上，而所有的处理器都能看到这条总线。 缓存本身是独立的，但是内存是共享资源，所有的内存访问都要经过仲裁(同一个指令周期中，只有一个 CPU 缓存可以读写内存)。 CPU 缓存不仅仅在做内存传输的时候才与总线打交道，而是不停在嗅探总线上发生的数据交换，跟踪其他缓存在做什么。 当一个缓存代表它所属的处理器去读写内存时，其它处理器都会得到通知，它们以此来使自己的缓存保持同步。 只要某个处理器写内存，其它处理器马上知道这块内存在它们的缓存段中已经失效。
+
+### 3.2 volatile 有序性实现
+
+####  volatile 的 happens-before 关系
+
+> happens-before 规则中有一条是 volatile 变量规则：对一个 volatile 域的写，happens-before 于任意后续对这个 volatile 域的读。
+
+```java
+//假设线程A执行writer方法，线程B执行reader方法
+class VolatileExample {
+    int a = 0;
+    volatile boolean flag = false;
+    
+    public void writer() {
+        a = 1;              // 1 线程A修改共享变量
+        flag = true;        // 2 线程A写volatile变量
+    } 
+    
+    public void reader() {
+        if (flag) {         // 3 线程B读同一个volatile变量
+        int i = a;          // 4 线程B读共享变量
+        ……
+        }
+    }
+}
+```
+
+根据 happens-before 规则，上面过程会建立 3 类 happens-before 关系。
+
+- 根据程序次序规则：1 happens-before 2 且 3 happens-before 4。
+- 根据 volatile 规则：2 happens-before 3。
+- 根据 happens-before 的传递性规则：1 happens-before 4。
+
+![image-20220728100359491](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207281003605.png)
+
+因为以上规则，当线程 A 将 volatile 变量 flag 更改为 true 后，线程 B 能够迅速感知。
+
+####  volatile 禁止重排序
+
+> 为了性能优化，JMM 在不改变正确语义的前提下，会允许编译器和处理器对指令序列进行重排序。JMM 提供了内存屏障阻止这种重排序。Java 编译器会在生成指令系列时在适当的位置会插入内存屏障指令来禁止特定类型的处理器重排序。
 
 volatile写是在前面和后面**分别插入内存屏障**，而volatile读操作是在**后面插入两个内存屏障**。
 
-<img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207271617708.png" alt="image-20220727161759628" style="zoom: 80%;" /><img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207271618822.png" alt="image-20220727161803746" style="zoom:80%;" />
+<img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207271617708.png" alt="image-20220727161759628" style="zoom: 70%;" /><img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207271618822.png" alt="image-20220727161803746" style="zoom:70%;" />
+
+JMM 会针对编译器制定 volatile 重排序规则表：
+
+![image-20220728100613984](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207281006065.png)
+
+" NO " 表示禁止重排序。
+
+为了实现 volatile 内存语义时，编译器在生成字节码时，会在指令序列中插入内存屏障来禁止特定类型的处理器重排序。
+
+对于编译器来说，发现一个最优布置来最小化插入屏障的总数几乎是不可能的，为此，JMM 采取了保守的策略。
+
+- 在每个 volatile 写操作的前面插入一个 StoreStore 屏障。
+- 在每个 volatile 写操作的后面插入一个 StoreLoad 屏障。
+- 在每个 volatile 读操作的后面插入一个 LoadLoad 屏障。
+- 在每个 volatile 读操作的后面插入一个 LoadStore 屏障。
+
+volatile 写是在前面和后面分别插入内存屏障，而 volatile 读操作是在后面插入两个内存屏障。
+
+| 内存屏障        | 说明                                                        |
+| --------------- | ----------------------------------------------------------- |
+| StoreStore 屏障 | 禁止上面的普通写和下面的 volatile 写重排序。                |
+| StoreLoad 屏障  | 防止上面的 volatile 写与下面可能有的 volatile 读/写重排序。 |
+| LoadLoad 屏障   | 禁止下面所有的普通读操作和上面的 volatile 读重排序。        |
+| LoadStore 屏障  | 禁止下面所有的普通写操作和上面的 volatile 读重排序。        |
+
+![image-20220728100805975](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207281008077.png)
 
 ## 4.使用到volatile的两个例子
 
@@ -330,6 +410,7 @@ class Singleton{
     }
  
     public static Singleton getInstance() {
+        //第一次加锁是为了性能考虑，因为线程安全发生在对象初始化，如果第一次不判断相当于全局控制，造成浪费。
         if(instance==null) {
             synchronized (Singleton.class) {
                 if(instance==null)
@@ -342,8 +423,6 @@ class Singleton{
 ```
 
 这是一种懒汉的单例模式，使用时才创建对象
-
-`instance` 采用 `volatile` 关键字修饰也是很有必要。
 
 `instance` 采用 `volatile` 关键字修饰也是很有必要的， `instance= new Singleton();` 这段代码其实是分为三步执行：
 
