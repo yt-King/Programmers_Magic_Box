@@ -487,7 +487,19 @@ public void run() {
 
 ## 线程中断
 
-一个线程执行完毕之后会自动结束，如果在运行过程中发生异常也会提前结束。
+一个线程执行完毕之后会自动结束，如果在运行过程中发生异常也会提前结束。中断相关的方法：
+
+- public void interrupt() 
+- public boolean isInterrupted() 
+- public static boolean interrupted()
+
+| **方法名**                   | **介绍**                                                     |
+| ---------------------------- | ------------------------------------------------------------ |
+| void interrupt()             | 中断线程，设置线程的中断位true                               |
+| boolean isInterrupted()      | 检查线程的中断标记位，true-中断状态， false-非中断状态       |
+| static boolean interrupted() | 静态方法，返回当前线程的中断标记位，同时清除中断标记，改为false。比如当前线程已中断，调用interrupted()，返回true, 同时将当前线程的中断标记位改为false, 再次调用interrupted()，会发现返回false |
+
+[一文了解JAVA线程的中断（Interrupt）机制](https://juejin.cn/post/7054934081733132301)
 
 ###  InterruptedException
 
