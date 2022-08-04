@@ -269,6 +269,35 @@ public final void acquire(int arg) {
 
 tryAcquire方法，由具体的锁来实现的，这个方法主要是尝试获取锁，获取成功就不会再执行其他代码了。
 
+#### selfInterrupt()
+
+> selfInterrupt()的代码很简单，就是“当前线程”自己产生一个中断。但是，为什么需要这么做呢？这必须结合acquireQueued()进行分析。如果在acquireQueued()中，当前线程被中断过，则执行selfInterrupt()；否则不会执行。
+
+具体原因引用知乎上“葬侬”的回答：
+
+>刚好也在看aqs，对selfInterrupt()这个点也纠结了好一会，也想简单谈一下自己的见解：
+>
+>所有的博客千篇一律的在说一个词：不响应中断，不响应中断，不响应中断（我主要就是被误导在这个地方）；其实他们想表达的意思应该是：线程不会像sleep catch Exception那样停止工作，而是继续埋头抢锁。
+>
+>所以，这怎么能被叫做 不响应中断呢？ 这应该叫 **不停止抢锁** 才对。
+>那‘响应’体现在哪里呢？ 体现在 线程LockSupport.park()响应了AQS外部调用interrupt()上，线程不再挂起了，开始继续抢锁了（本来被挂起了，遇到中断就继续能抢锁，你说这能叫不响应中断？
+>
+>抢锁最重要，中断靠边站，哪怕中断，也得等到 我把这个锁抢到！至于说 想让线程停下工作，这件事 道格李不管，道格李给你补了一个中断位：selfInterrupt()，**线程的用户自己去实现吧**。
+
+我认为最后一句很重要，补一个中断位可以让用户有办法知道线程是否被中断过，给了用户自己实现的空间。
+
+---
+
+同时还可以思考一下这个**问题**：AQS组件`acquire(int)`方法是否有必要调用`selfInterrupt`方法？因为acquireQueued方法内部的`parkAndCheckInterrupted`方法不响应中断，并且内部调用了`Thread.interrupted`方法清除中断标记位。所以当该方法返回true（被中断）时，需要手动补偿中断标记位。这么做是否有点绕呢？ 如果修改为：在`parkAndCheckInterrupted`方法内部直接`return` `Thread.currentThread().isInterrupt()`，即可以返回当前线程中断状态，又可以避免在`acquire`方法中调用`selfInterrupt`方法进行中断标志位补偿。
+
+>#### **之所以不用`isInterrupt`方法的原因是：**
+>
+>若当前线程被唤醒后（从`LockSurport.park`方法返回），若`return Thread.currentThread.isinterrupt()`方法，线程中断标志不会清除。之后，线程再次试图获取锁，若依旧没有获取到，会再次尝试调用`LockSurport.park`方法将自己挂起。
+>
+>但是 此时，线程中断标志位为true，而在该状态下LockSurport.pase方法并不会生效，使得程序继续执行。(park方法阻塞线程的必要条件：未处于中断状态、无permit，所以park方法后需要清除中断态。锁获取成功后要根据是否清除过中断态来进行补偿中断)
+>
+>若该线程始终获取不到锁，该线程将在acquireQueue方法的循环中空转，**cpu有可能会出现100%**
+
 #### tryAcquire(int arg)
 
 ```java
@@ -357,6 +386,10 @@ private Node enq(final Node node) {
     }
 ```
 
+为什么说p==head就是保证公平性{if (p == head && tryAcquire(arg)) }？
+
+>如果“前继节点调用unpark()唤醒了当前线程”并且“前继节点是CLH表头”，此时就是满足p==head，也就是符合公平性原则的。否则，如果当前线程是因为“线程被中断”而唤醒，并且前继节点不是头结点，如果不判断的话那么这种情况下的线程也有可能获得锁，那么显然就不是公平的了。
+
 acquireQueued()方法的流程大致如下：
 
 ![image-20220422114524482](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/old/4/202204221145696.png)
@@ -430,6 +463,12 @@ acquireQueued()方法的流程大致如下：
     }
 ```
 
+这里介绍一下线程被阻塞之后如何唤醒。一般有2种情况：
+**第1种情况**：unpark()唤醒。“前继节点对应的线程”使用完锁之后，通过unpark()方式唤醒当前线程。
+**第2种情况**：中断唤醒。其它线程通过interrupt()中断当前线程。->[interrupt唤醒挂起线程](https://www.jianshu.com/p/1e1276749338?u_atoken=6624eb78-4618-4f68-831d-77dfc35de399&u_asession=01rnXiTcEVvH9FxXdLx2D7EbWyL4fs7BzK13qrNeQsFeXdwdlF5Ds4kEba_orh3JAtX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K9yu3DxgTskOyGyzQRR8shtPMqDvQo0pEVbhSjSW3HVJmBkFo3NEHBv0PZUm6pbxQU&u_asig=05J29Yav8usuQyWHInRl-AdxpLw9ca_2XuErw2TbWGTy7VkOAZDMAdu3Y8t04AH9yvuSRcUrXam2tukSl2Wcv5ZdQyrlSn6KzatoHv2GDaa2--iY537xeWVkhLZaZbQYFY8wodJ4Ji602wnGev_yfT0iQesxCga8z0dOejK0Alm9b9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzQVmroxGGy8dJhPPpz9-6sc3R_y1Y9RidYEQxrjo2Z3mOF33MttdlYrQH7V14NMYIe3h9VXwMyh6PgyDIVSG1W_FLqQNxNPVLy3a29iezdXKz7pGRP4Z_48YKFbopS17xi8cj_-dkUYYniihrLk6SbYOVw8_hM7Su9OtirclSFaImWspDxyAEEo4kbsryBKb9Q&u_aref=%2FjF5X2sBTf%2BBe0Yul3aKk%2BIaJuM%3D)
+
+补充：LockSupport()中的park(),unpark()的作用 和 Object中的wait(),notify()作用类似，是阻塞/唤醒。它们的用法不同，park(),unpark()是轻量级的，而wait(),notify()是必须先通过Synchronized获取同步锁。
+
 到此加锁的过程就结束了，接下来时解锁的部分-> release()
 
 #### release(int arg)
@@ -453,7 +492,7 @@ acquireQueued()方法的流程大致如下：
 
 2、如果释放锁成功，那么就会接着判断头节点是否为空和头节点 waitStatus 是否不为 0 。
 
-这里判断头节点状态是一个比较重要的点。为什么头节点的状态一定不能为 0 呢？从后面要讲到源码可以知道，在唤醒头节点的后继之前会做一个将头节点状态置为 0 的操作（虽然这个操作不一定成功）。如果头节点的状态为 0 了，说明正在释放后继节点，这时候也就不再需要释放了，直接返回 true。
+这里判断头节点状态是一个比较重要的点。**为什么头节点的状态一定不能为 0 呢**？从后面要讲到源码可以知道，在唤醒头节点的后继之前会做一个将头节点状态置为 0 的操作（虽然这个操作不一定成功）。如果头节点的状态为 0 了，说明正在释放后继节点，这时候也就不再需要释放了，直接返回 true。
 
 头节点状态判断之后，就会进入到释放后继节点这一步，也就是`unparkSuccessor()`方法：
 
@@ -1068,4 +1107,30 @@ Thread[t3,5,main] running
 
   说明: 由上图可知，最后的结果是t2线程会被禁止，因为调用了LockSupport.park。
 
-   
+- t3线程执行lock.lock，过程类似于t2。
+
+  ![image-20220803162527285](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208031625385.png)
+
+  说明: 由上图可知，最后的结果是t3线程会被禁止，因为调用了LockSupport.park。
+
+- t1线程调用了lock.unlock，下图给出了方法调用中的主要方法。
+
+  ![image-20220803163012941](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208031630024.png)
+
+  说明: 如上图所示，最后，head的状态会变为0，t2线程会被unpark，即t2线程可以继续运行。此时t3线程还是被禁止。
+
+- t2获得cpu资源，继续运行，由于t2之前被park了，现在需要恢复之前的状态，下图给出了方法调用中的主要方法。
+
+  ![image-20220803163047164](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208031630243.png)
+
+  说明: 在setHead函数中会将head设置为之前head的下一个结点，并且将pre域与thread域都设置为null，在acquireQueued返回之前，sync queue就只有两个结点了。
+
+- t2执行lock.unlock，下图给出了方法调用中的主要方法。
+
+  ![image-20220803165021757](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208031650832.png)
+
+  说明: 由上图可知，最终unpark t3线程，让t3线程可以继续运行。
+
+- 以此类推，最后t3执行lock.unlock，队列中有一个空节点，头节点为尾节点均指向它。
+
+  ![image-20220803165113746](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208031651813.png)
