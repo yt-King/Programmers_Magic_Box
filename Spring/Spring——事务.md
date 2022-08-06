@@ -286,6 +286,29 @@ public enum Isolation {
 - **`TransactionDefinition.ISOLATION_REPEATABLE_READ`** : 对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，**可以阻止脏读和不可重复读，但幻读仍有可能发生。**
 - **`TransactionDefinition.ISOLATION_SERIALIZABLE`** : 最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，这样事务之间就完全不可能产生干扰，也就是说，**该级别可以防止脏读、不可重复读以及幻读**。但是这将严重影响程序的性能。通常情况下也不会用到该级别。
 
+**需要注意的是：**Spring只提供统一事务管理接口，具体实现都是由各数据库自己实现（如MySQL）。Spring会在事务开始时，根据当前环境中设置的隔离级别，调整数据库隔离级别，由此保持一致。
+
+在`DataSourceUtils`文件中，代码详细的输出了这个过程。
+
+```java
+// Apply specific isolation level, if any.
+Integer previousIsolationLevel = null;
+if (definition != null && definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {
+	if (logger.isDebugEnabled()) {
+		logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " +
+				definition.getIsolationLevel());
+	}
+	int currentIsolation = con.getTransactionIsolation();
+	if (currentIsolation != definition.getIsolationLevel()) {
+		previousIsolationLevel = currentIsolation;
+		con.setTransactionIsolation(definition.getIsolationLevel());
+	}
+}
+
+```
+
+结论：三种情况，如果Spring没有指定事务隔离级别，则会采用数据库默认的事务隔离级别；当Spring指定了事务隔离级别，则会在代码里将事务隔离级别修改为指定值；当数据库不支持这种隔离级别，效果则以数据库的为准（比如采用了MyISAM引擎）。
+
 ## 事务超时属性
 
 所谓事务超时，就是指一个事务所允许执行的最长时间，如果超过该时间限制但事务还没有完成，则自动回滚事务。在 `TransactionDefinition` 中以 int 的值来表示超时时间，其单位是秒，默认值为-1。
