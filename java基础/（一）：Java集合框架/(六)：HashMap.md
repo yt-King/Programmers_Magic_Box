@@ -2,7 +2,7 @@
 
 ## 1.哈希表简介
 
-https://juejin.cn/post/6876105622274703368
+[面试官：哈希表都不知道，你是怎么看懂HashMap的？](https://juejin.cn/post/6876105622274703368)
 
 ## 2.底层实现
 
@@ -12,13 +12,35 @@ JDK1.8 之前 `HashMap` 底层是 **数组和链表** 结合在一起使用也�
 
 **所谓扰动函数指的就是 HashMap 的 hash 方法。使用 hash 方法也就是扰动函数是为了防止一些实现比较差的 hashCode() 方法 换句话说使用扰动函数之后可以减少碰撞。**
 
-### 2.1-JDK1.8之后
+### 2.2-JDK1.8之后
 
-相比于之前的版本， JDK1.8 之后在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。 
+相比于之前的版本， JDK1.8 之后在解决哈希冲突时有了较大的变化，当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，每次扩容后，容量为原来的 2 倍，并进行数据迁移。而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。 
 
-![image-20220224183602759]((%E5%85%AD)%EF%BC%9AHashMap.images/image-20220224183602759.png)
+![image-20220807152015513](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208071520618.png)
 
 >TreeMap、TreeSet 以及 JDK1.8 之后的 HashMap 底层都用到了红黑树。红黑树就是为了解决二叉查找树的缺陷，因为二叉查找树在某些情况下会退化成一个线性结构。
+
+### 2.3-基本操作
+
+`HashMap`提供两个重要的基本操作，`put(K, V)`和`get(K)`。
+
+- 当调用`put`操作时，`HashMap`计算键值K的哈希值，然后将其对应到`HashMap`的某一个桶(`bucket`)上；此时找到以这个桶为头结点的一个单链表，然后顺序遍历该单链表找到某个节点的`Entry`中的`Key`是**等于**给定的参数K；若找到，则将其的`old V`替换为参数指定的`V`；否则直接在链表尾部插入一个新的`Entry`节点。
+- 对于`get(K)`操作类似于`put`操作，`HashMap`通过计算键的哈希值，先找到对应的桶，然后遍历桶存放的单链表通过比照`Entry`的键来找到对应的值。
+
+### 2.4 HashMap扩容
+
+在使用`HashMap`的过程中，我们经常会遇到这样一个带参数的构造方法。
+
+```java
+public HashMap(int initialCapacity, float loadFactor) ;
+```
+
+- 第一个参数：初始容量，指明初始的桶的个数；相当于桶数组的大小。
+- 第二个参数：装载因子，是一个0-1之间的系数，根据它来确定需要扩容的阈值，默认值是0.75。
+
+**当`map`中包含的`Entry`的数量大于等于`threshold = loadFactor * capacity`的时候，且新建的`Entry`刚好落在一个非空的桶上，此刻触发扩容机制，将其容量扩大为2倍。**
+
+当`size`大于等于`threshold`的时候，并不一定会触发扩容机制，但是会很可能就触发扩容机制，只要有一个新建的`Entry`出现哈希冲突，则立刻`resize`。
 
 ## 3.特点
 
@@ -47,7 +69,7 @@ JDK1.8 之前 `HashMap` 底层是 **数组和链表** 结合在一起使用也�
 
 ## 7.ConcurrentHashMap
 
-![image-20220224191518262]((%E5%85%AD)%EF%BC%9AHashMap.images/image-20220224191518262.png)
+![image-20220807152021143](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208071520214.png)
 
 **在 JDK1.7 的时候，`ConcurrentHashMap`（分段锁）** 对整个桶数组进行了分割分段(`Segment`)，每一把锁只锁容器其中一部分数据，多线程访问容器里不同数据段的数据，就不会存在锁竞争，提高并发访问率。
 
@@ -59,7 +81,7 @@ Segment 实现了 `ReentrantLock`,所以 `Segment` 是一种可重入锁，扮�
 
 一个 `ConcurrentHashMap` 里包含一个 `Segment` 数组。`Segment` 的结构和 `HashMap` 类似，是一种数组和链表结构，一个 `Segment` 包含一个 `HashEntry` 数组，每个 `HashEntry` 是一个链表结构的元素，每个 `Segment` 守护着一个 `HashEntry` 数组里的元素，当对 `HashEntry` 数组的数据进行修改时，必须首先获得对应的 `Segment` 的锁。
 
-![image-20220224191439487]((%E5%85%AD)%EF%BC%9AHashMap.images/image-20220224191439487.png)
+![image-20220807152024650](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208071520709.png)
 
 JDK1.8 的 `ConcurrentHashMap` 不再是 **Segment 数组 + HashEntry 数组 + 链表**，而是 **Node 数组 + 链表 / 红黑树**。不过，Node 只能用于链表的情况，红黑树的情况需要使用 **`TreeNode`**。当冲突链表达到一定长度时，链表会转换成红黑树。
 

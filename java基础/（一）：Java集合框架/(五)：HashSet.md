@@ -15,7 +15,7 @@
 
 ## 3.对比hashmap
 
-![image-20220224161601725]((%E4%BA%94)%EF%BC%9AHashSet.images/image-20220224161601725.png)
+![image-20220807152229923](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208071522976.png)
 
 ## 4.如何检查重复
 
