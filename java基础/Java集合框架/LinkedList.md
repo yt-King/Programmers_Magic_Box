@@ -30,7 +30,7 @@ LinkedList 实现了 Cloneable 接口，可实现克隆。
 LinkedList 实现了 java.io.Serializable 接口，即可支持序列化，能通过序列化去传输。
 ```
 
-![img](format,png.png)
+![image-20220808164734384](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208081647519.png)
 
 ## 2-常用方法
 

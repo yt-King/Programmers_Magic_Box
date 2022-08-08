@@ -14,7 +14,7 @@
 
 ## 2-集合框架图：
 
-![img](aHR0cHM6Ly93d3cucnVub29iLmNvbS93cC1jb250ZW50L3VwbG9hZHMvMjAxNC8wMS8yMjQzNjkwLTljZDljODk2ZTBkNTEyZWQuZ2lm.gif)
+![image-20220808164032283](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208081640389.png)
 
 从上面的集合框架图可以看到，Java 集合框架主要包括两种类型的容器，一种是集合（Collection），存储一个元素集合，另一种是图（Map），存储键/值对映射。Collection 接口又有 3 种子类型，List、Set 和 Queue，再下面是一些抽象类，最后是具体实现类，常用的有 [ArrayList](https://blog.csdn.net/weixin_43314519/article/details/107473328)、[LinkedList](https://blog.csdn.net/weixin_43314519/article/details/107473351)、[HashSet](https://blog.csdn.net/weixin_43314519/article/details/107473290)、LinkedHashSet、[HashMap](https://blog.csdn.net/weixin_43314519/article/details/107473228)、LinkedHashMap 等等。
 
@@ -28,13 +28,13 @@
 
 除了集合，该框架也定义了几个 Map 接口和类。Map 里存储的是键/值对。尽管 Map 不是集合，但是它们完全整合在集合中。
 
-![img](format,png.png)
+![image-20220808163956217](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208081639330.png)
 
 ## 4-集合接口
 
 | 序号 | 接口描述                                                     |
 | :--- | ------------------------------------------------------------ |
-| 1    | Collection 接口 ：Collection 是最基本的集合接口，一个 Collection 代表一组 Object，即 Collection 的元素, Java不提供直接继承自Collection的类，只提供继承于的子接口(如List和set)。Collection 接口存储一组不唯一，无序的对象。 |
+| 1    | Collection 接口 ：Collection 是最基本的集合接口，一个 Collection 代表一组 Object，即 Collection 的元素, Java不提供直接继承自Collection的类，只提供继承于Collection的子接口(如List和set)。Collection 接口存储一组不唯一，无序的对象。 |
 | 2    | List 接口： List接口是一个有序的 Collection，使用此接口能够精确的控制每个元素插入的位置，能够通过索引(元素在List中位置，类似于数组的下标)来访问List中的元素，第一个元素的索引为 0，而且允许有相同的元素。List 接口存储一组不唯一，有序（插入顺序）的对象。 |
 | 3    | Set ：Set 具有与 Collection 完全一样的接口，只是行为上不同，Set 不保存重复的元素。Set 接口存储一组唯一，无序的对象。 |
 | 4    | SortedSet： 继承于Set保存有序的集合。                        |
