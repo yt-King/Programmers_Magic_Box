@@ -431,6 +431,10 @@ public static void main(String[] args) {
 
 ### [Java “优雅”地中断线程(原理篇)](https://juejin.cn/post/7002460243858817031)
 
+### [Thread类源码解读(2)——线程状态及常用方法](https://segmentfault.com/a/1190000016056471)
+
+### [Thread类源码解读(3)——线程中断interrupt](https://segmentfault.com/a/1190000016083002)
+
 ## 基础线程机制
 
 ###  Executor
