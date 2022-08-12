@@ -157,31 +157,32 @@ public ThreadPoolExecutor(int corePoolSize,
                               RejectedExecutionHandler handler)
 ```
 
->- `corePoolSize` 线程池中的核心线程数，最开始的时候，当提交一个任务时，线程池创建一个新线程执行任务，直到当前线程数等于corePoolSize, 即使有其他空闲线程能够执行新来的任务, 也会继续创建线程；如果当前线程数为corePoolSize，继续提交的任务被保存到阻塞队列中，等待被执行；如果执行了线程池的prestartAllCoreThreads()方法，线程池会提前创建并启动所有核心线程。
+>- `corePoolSize` 线程池中的核心线程数，最开始的时候，当提交一个任务时，线程池创建一个新线程执行任务，直到当前线程数等于corePoolSize, 即使当前有其他空闲线程能够执行新来的任务, 也会继续创建线程；如果当前线程数为corePoolSize，继续提交的任务被保存到阻塞队列中，等待被执行；如果执行了线程池的prestartAllCoreThreads()方法，线程池会提前创建并启动所有核心线程。
 >
 >- `maximumPoolSize` 线程池中允许的最大线程数。如果当前阻塞队列满了，且继续提交任务，则创建新的线程执行任务，前提是当前线程数小于maximumPoolSize；当阻塞队列是无界队列, 则maximumPoolSize则不起作用, 因为无法提交至核心线程池的线程会一直持续地放入workQueue.
 >
 >- `workQueue` 用来保存等待被执行的任务的阻塞队列. 在JDK中提供了如下阻塞队列: 
+>  - `ArrayBlockingQueue`: 基于数组结构的有界阻塞队列，创建时必须指定大小，按FIFO排序任务；
+>  - `LinkedBlockingQueue`: 基于链表结构的阻塞队列，是无界的，默认大小是 `Integer.MAX_VALUE`，按FIFO排序任务，吞吐量通常要高于ArrayBlockingQueue；
+>  - `SynchronousQueue`: 一个不存储元素的阻塞队列，每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，可以把它看成容量为0的队列，吞吐量通常要高于LinkedBlockingQueue；
+>  - `PriorityBlockingQueue`: 具有优先级的无界阻塞队列；
 >
-> - `ArrayBlockingQueue`: 基于数组结构的有界阻塞队列，创建时必须指定大小，按FIFO排序任务；
-> - `LinkedBlockingQueue`: 基于链表结构的阻塞队列，是无界的，默认大小是 `Integer.MAX_VALUE`，按FIFO排序任务，吞吐量通常要高于ArrayBlockingQueue；
-> - `SynchronousQueue`: 一个不存储元素的阻塞队列，每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，可以把它看成容量为0的队列，吞吐量通常要高于LinkedBlockingQueue；
-> - `PriorityBlockingQueue`: 具有优先级的无界阻塞队列；
 >
-> >`LinkedBlockingQueue`比`ArrayBlockingQueue`在插入删除节点性能方面更优，但是二者在`put()`, `take()`任务的时均需要加锁，`SynchronousQueue`使用无锁算法，根据节点的状态判断执行，而不需要用到锁，其核心是`Transfer.transfer()`
-> >
-> >关于阻塞队列的详细信息可以参考：[ThreadPoolExecutor最佳实践--如何选择队列](https://blog.csdn.net/Holmofy/article/details/81610481)
+>>`LinkedBlockingQueue`比`ArrayBlockingQueue`在插入删除节点性能方面更优，但是二者在`put()`, `take()`任务的时均需要加锁，`SynchronousQueue`使用无锁算法，根据节点的状态判断执行，而不需要用到锁，其核心是`Transfer.transfer()`
+>>
+>>关于阻塞队列的详细信息可以参考：[ThreadPoolExecutor最佳实践--如何选择队列](https://blog.csdn.net/Holmofy/article/details/81610481)
 >
 >- `keepAliveTime` 线程空闲时的存活时间，即当线程没有任务执行时，该线程继续存活的时间；默认情况下，该参数只在线程数大于corePoolSize时才有用, 超过这个时间的空闲线程将被终止；
 >- `unit` keepAliveTime的单位
 >- `threadFactory` 创建线程的工厂，通过自定义的线程工厂可以给每个新建的线程设置一个具有识别度的线程名。默认为DefaultThreadFactory
 >- `handler` 线程池的饱和策略，当阻塞队列满了，且没有空闲的工作线程，如果继续提交任务，必须采取一种策略处理该任务，线程池提供了4种策略:
 >  - `AbortPolicy`: 直接抛出异常，默认策略；
->   - `CallerRunsPolicy`: 用调用者所在的线程来执行任务；
->   - `DiscardOldestPolicy`: 丢弃阻塞队列中靠最前的任务，并执行当前任务；
->   - `DiscardPolicy`: 直接丢弃任务；
+>  - `CallerRunsPolicy`: 用调用者所在的线程来执行任务；
+>  - `DiscardOldestPolicy`: 丢弃阻塞队列中靠最前的任务，并执行当前任务；
+>  - `DiscardPolicy`: 直接丢弃任务；
 >
->当然也可以根据应用场景实现RejectedExecutionHandler接口，自定义饱和策略，如记录日志或持久化存储不能处理的任务。
+>
+>推荐根据应用场景实现RejectedExecutionHandler接口，**自定义饱和策略**，如记录日志或持久化存储不能处理的任务，方便对线程池容量, 以及使用是否合理进行分析, 这一点在实战中特别重要。
 
 ### 三种类型
 
@@ -245,7 +246,7 @@ public static ExecutorService newCachedThreadPool() {
 
 1. 首先执行 `SynchronousQueue.offer(Runnable task)`。如果当前 `maximumPool` 中有空闲线程正在执行 `SynchronousQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS)`，那么主线程执行 `offer` 操作与空闲线程执行的 `poll` 操作配对成功，主线程把任务交给空闲线程执行，`execute()` 方法执行完成；否则执行下面的步骤2
 2. 当初始 `maximumPool` 为空，或者 `maximumPool` 中当前没有空闲线程时，将没有线程执行 `SynchronousQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS)`。这种情况下，步骤1将失败。此时 `CachedThreadPool` 会创建一个新线程执行任务，`execut()` 方法执行完成
-3. 在步骤2中新创建的线程将任务执行完成后，会执行 `SynchronousQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS)。`这个 `poll` 操作会让空闲线程最多在 `SynchronousQueue` 中等待60秒钟。如果60秒钟内主线程提交了一个新任务（主线程执行步骤1），那么这个空闲线程将执行主线程提交的新任务；否则，这个空闲线程将终止。由于空闲60秒的空闲线程会被终止，因此长时间保持空闲的 `CachedThreadPool` 不会使用任何的资源。
+3. 在步骤2中新创建的线程将任务执行完成后，会执行 `SynchronousQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS)。`这个 `poll` 操作会让空闲线程最多在 `SynchronousQueue` 中等待60秒钟。如果60秒钟内主线程提交了一个新任务（主线程执行步骤1），那么这个空闲线程将执行主线程提交的新任务；否则，这个空闲线程将终止。由于空闲60秒的空闲线程会被终止，因此长**时间保持空闲的 `CachedThreadPool` 不会使用任何的资源。**
 
 ### 关闭线程池
 
@@ -362,11 +363,31 @@ private final AccessControlContext acc;
 
 ### 提交任务主流程分析
 
+在 ThreadPoolExcute 内部有几个重要的检验，看源码的时候不妨留心观察一下：
+
+- **判断当前的运行状态**，根据运行状态来做处理，如果当前都停止运行了，那很多操作也就没必要了
+- **判断当前线程池的数量**，然后将该数据和 corePoolSize 以及 maximumPoolSize 进行比较，然后再去决定下一步该做啥
+
+#### AbstractExecutorService.submit()
+
+```java
+public <T> Future<T> submit(Callable<T> task) {
+    if (task == null) throw new NullPointerException();
+    // 构造一个FutureTask实例,只要作用是获得返回值.这部分先不管,先看提交过程
+    RunnableFuture<T> ftask = newTaskFor(task);
+    //执行任务
+    execute(ftask);
+    return ftask;
+}
+```
+
+关于`FutureTask`的作用可以看看我的这篇文章：[走进源码让你搞明白什么是FutureTask](https://juejin.cn/post/7130048205752336392)，这里不做过多赘述。
+
+#### ThreadPoolExecutor.execute()
+
 先看流程图：
 
 ![img](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208101401157.png)
-
-#### ThreadPoolExecutor.execute()
 
 ```java
 public void execute(Runnable command) {
@@ -380,10 +401,10 @@ public void execute(Runnable command) {
             return;
         }
         // 如果创建失败，防止外部已经在线程池中加入新任务，重新获取线程数及线程池状态
-        //创建失败的原因在下面分析addWorker的时候有说到
+        // 创建失败的原因在下面分析addWorker的时候有说到
         c = ctl.get();
     }
-    // 第二步，超过核心线程数则将该任务提交到阻塞队列,只有线程池处于 RUNNING（线程池可以接受新任务） 状态，才执行置入队列的操作
+    // 第二步，超过核心线程数则将该任务提交到阻塞队列（如果不违反容量限制且操作成功后返回true，否则返回false不报异常）,只有线程池处于 RUNNING（线程池可以接受新任务） 状态，才执行置入队列的操作
     if (isRunning(c) && workQueue.offer(command)) {
         int recheck = ctl.get();//double check
         // 如果线程池不是 RUNNING 状态，则将刚加入队列的任务移除
@@ -412,9 +433,62 @@ public void execute(Runnable command) {
 >
 >---
 >
->为什么需要double check线程池的状态?
+>### **为什么需要double check线程池的状态?**
 >
 >在多线程环境下，线程池的状态时刻在变化，而ctl.get()是非原子操作，很有可能刚获取了线程池状态后线程池状态就改变了。倘若没有double check，万一线程池处于非running状态(在多线程环境下很有可能发生)，没有double check的情况下就不会将command移出，那么command永远不会执行。
+>
+>我们从下面这个条件中
+>
+>```java
+>if (isRunning(c) && workQueue.offer(command))
+>```
+>
+>可以得到的是至少在执行`workQueue.offer(command))`这段代码前线程池是在运行的，但是不能保证在执行这段代码时线程池不被其他线程关闭，所以这个if语句为true的情况有一下两种：
+>
+>1. 核心线程已满任务成功排队后线程池依旧正在运行
+>2. 核心线程已满任务成功排队前线程池就被关闭了
+>
+>如果是第二种情况的话这个任务相当于错误的被提交到线程池了，违反了关闭状态下的线程池不允许提交任务这个规则。因此需要进行**二次判断**（recheck）这个任务是否需要被回滚：
+>
+>```java
+>// 如果线程池不是 RUNNING 状态，则将刚加入队列的任务移除
+>if (!isRunning(recheck) && remove(command)) {
+>    //执行拒绝策略
+>    reject(command);
+>}
+>```
+>
+>如果`! isRunning(recheck) == true`成立代表自进入外层的if以来有其它线程关闭了线程池。因此在这种并发情况下需要**尝试**对这个任务进行回滚，注意：是尝试回滚，不一定能够回滚成功。回滚调用的是内部的remove方法：
+>
+>```java
+>public boolean remove(Runnable task) {
+>    boolean removed = workQueue.remove(task);
+>    tryTerminate();
+>    return removed;
+>}
+>```
+>
+>内部调用的是队列的`remove`方法将这个任务从队列中移除，但是不能保证这个任务一定能够被成功移除，如果移出失败或者不存在这个任务的情况下会返回false。考虑以下情况：
+>
+>1. A线程执行`execute`时发现此刻线程池的核心线程满了，然后进入外层的`if (isRunning(c) && workQueue.offer(command))`走到提交任务但是还未提交成功，此刻被cpu挂起
+>2. B线程得到时间片调用了shutdown方法（具体流程看后文介绍）准备关闭线程池，将线程池的状态设置为SHUTDOWN然后被cpu挂起
+>3. A线程恢复，任务提交成功入队然后又被挂起
+>4. B线程恢复接着运行shutdown方法**唤醒了线程池中那些空闲的线程**然后这些空闲的线程从队列中**取出了刚刚A线程刚刚提交的任务开始执行**，此刻被挂起
+>5. A线程继续执行内层的`if (! isRunning(recheck) && remove(command))`判断，发现线程池被关闭了（B线程关闭的）并且尝试调用remove方法失败，因为任务被线程B唤醒的线程拿去执行了，所以remove找不到这个任务返回false，这也就意味着**被提交的任务由于其它线程关闭了线程池导致这个本应该被remove的任务却被错误的执行了**，所以**shutdown状态下的线程池也是有可能存在提交并成功执行任务的**。
+>
+>如果没有出现上面说的这种情况也就是说任务被正常remove就通过reject方法来拒绝这个被错误提交的任务（具体reject策略靠人为实现）。
+>
+>---
+>
+>但是如果remove失败了呢？就会走到`else if (workerCountOf(recheck) == 0)` ，走到这里意味着任务回滚失败（remove失败）或者任务入队前后线程池都处于运行状态，但是这种情况下为什么要判断当前线程池的线程数是否为0呢？考虑一下情况：
+>
+>1. A线程执行`execute`方法提交了一个任务T并成功入队，但是此刻线程池中的所有核心线程都正在执行耗时的任务，所以此刻任务队列中只存在一个任务T，然后被挂起
+>
+>2. B线程调用了`shutdownNow`方法将线程池的状态变更为STOP然后内部会调用`interruptWorkers`方法将所有的的核心线程的中断标记设置为true
+>
+>3. CPU调度B线程与A线程同时被挂起（还未执行`shutdownNow`方法中的`drainQueue`方法），此时线程池中的所有核心线程刚刚将那些耗时的任务都执行完毕，接着`runWorker`方法中的while循环就会继续执行`getTask`方法去队列中拿任务
+>
+>   >因为上面B线程调用`shutdownNow`方法将线程池的状态设置为STOP了，所以接下来所有的核心线程都无法从队列中获取到任务，然后就会跳出`runWorker`的while循环，最终所有的核心线程将**全部被移除**，此刻核心线程池中一个worker都没有了，而线程池中的任务队列还存在一个A线程提交的任务T，这样就会**导致这个任务永远无法被执行**。所以在上面的else if中才会对当前线程池中的worker进行非零判断避免这种极端情况的发生，保证线程池中至少有一个worker在工作。
 
 #### ThreadPoolExecutor.addWorker(Runnable firstTask, boolean core)
 
@@ -426,9 +500,11 @@ public void execute(Runnable command) {
 
 ```java
 private boolean addWorker(Runnable firstTask, boolean core) {
+    //第一步：检查是否应该创建一个新的线程来处理这个任务
     // 不需要任务预定义的语法标签，响应下文的 continue retry，快速退出多层嵌套循环
     // 此中写法类似于 goto 作用，目的是早实现多重循环时能够快速退出到任何一层
     retry:
+    //使用了嵌套自旋来进行判断，外层自旋判断当前线程池状态
     for (; ; ) {
         int c = ctl.get();// 获取当前线程池状态及线程数的容器
         int rs = runStateOf(c);// 获取当前运行状态
@@ -440,7 +516,7 @@ private boolean addWorker(Runnable firstTask, boolean core) {
         //把判断条件类比成rs >= shutdown && (rs != shutdown || firstTask != null || workQueue.isEmpty())更好理解
             return false;
         }
-
+		//内层自旋判断当前线程池中的数量是否合理
         for (; ; ) {
             int wc = workerCountOf(c);// 当前线程数
             // 如果超过最大允许线程数则不能再添加新的线程
@@ -452,21 +528,22 @@ private boolean addWorker(Runnable firstTask, boolean core) {
             }
             // 将当前活动线程数加一(原子性操作)
             if (compareAndIncrementWorkerCount(c)) {
-                // 表示直接跳出与 retry 相邻的这个循环体，也就是跳出外面那层的for循环，从开始创建工作线程继续
+                // 成功的话表示直接跳出与 retry 相邻的这个循环体，也就是跳出外面那层的for循环，从开始创建工作线程继续
+                // 如果失败了有可能是其它线程也执行到这里了（compareAndIncrementWorkerCount方法只会在addWorker方法中被执行）
                 break retry;
             }
-            // 线程池状态和工作线程数是可变化的，需要经常提取这个最新值
+            // 失败的话需要重将线程池状态与外层自旋时的状态作对比，因为导致cas失败的其它线程可能会修改线程池的状态
             c = ctl.get();
             // 判断当前运行状态是不是改变了
             if (runStateOf(c) != rs)
-                // 跳转至标签处，继续执行循环
+                // 能走到这里说明在上面将当前活动线程数加一(原子性操作)失败了
                 // 如果条件为假，则说明状态没变，线程池还处于运行状态，继续在 for (;;) 循环内执行，进行cas操作
-                // 如果变了，就从外层循环重新执行，重新进行状态的检查
+                // 如果状态不一致的话代表此刻其它线程改变了线程池的状态，这个时候就需要重新从外层自旋开始进行判断了，线程池这个时候很有可能已经被关闭了
                 continue retry;
         }
     }
 
-    // 开始创建工作线程
+    // 第二步：在满足第一步的条件下创建新的线程，然后执行提交的任务
     boolean workerStarted = false;
     boolean workerAdded = false;
     Worker w = null;
@@ -520,30 +597,14 @@ private boolean addWorker(Runnable firstTask, boolean core) {
 }
 ```
 
->整体还不算复杂，核心就是根据传入的任务创建一个Worker对象，然后启动Worker。
->
->分析：根据当前线程池状态，检查是否可以添加新的任务线程，如果可以就创建并启动任务。
->
->- 一切正常会返回 true。
->-  返回 false 的情况：
->   * 1.线程池没有处于 RIUNNING 状态
->   * 2.线程工厂创建新的任务线程失败
->
->参数分析：
->
-> * firstTask：外部启动线程池时需要构造的第一个线程，它是线程的母体
-> * core：新增工作线程时的判断指标
->    - true：表示新增工作线程时，需要判断当前 RUNNING 状态的线程是否少于 corePoolSize(常驻核心线程数)
->     - false：表示新增工作线程时，需要判断当前 RUNNING 状态的线程是否少于 maximumPoolSize(线程池能够容纳同时执行的最大线程数)
->
->**通过源码，可以总结出创建 Worker 失败的原因：**
+>**通过源码，可以总结出addWorker 失败的原因：**
 >
 >1. **在添加时线程池被停止了**
 >2. **添加核心线程池时，超过核心线程池数量**
 >3. **添加非核心线程池时，超过最大线程池数量**
 >4. **Worker 对象初始化未完成时就被使用，即 thread 对象还未完全创建**
->5. **当前线程正在被运行(防止出现重复运行，抛出异常)**
->6. **线程创建过多，导致 OOM**
+> 5. **当前线程正在被运行(防止出现重复运行，抛出异常)**
+> 6. **线程创建过多，导致 OOM**
 
 #### addWorkerFailed(Worker w)
 
@@ -639,6 +700,105 @@ private final class Worker extends AbstractQueuedSynchronizer implements Runnabl
 }
 ```
 
+>**为什么work要继承AQS？**
+>
+>在stack Overflow上找到的回答如下：
+>
+>> We implement a simple non-reentrant mutual exclusion lock rather than use ReentrantLock because we do not want worker tasks to be able to reacquire the lock when they invoke pool control methods like setCorePoolSize.
+>>
+>> 翻译如下：我们实现了一个简单的不可重入的互斥锁锁，而不是使用 ReentrantLock，因为我们不希望工作任务在调用诸如 setCorePoolSize 这样的池控制方法时能够重新获取锁。
+>>
+>> ---
+>>
+>> 这是因为可能正在等待任务的线程是通过未锁定来表示的，也就是说，tryLock 对于它们返回 true。如果在这里使用 ReentrantLock，会发生什么情况呢:
+>>
+>> ```java
+>> setCorePoolSize->interruptIdleWorkers->tryLock() (here success!) -> Thread.interrupt (thread of this worker)
+>> ```
+>>
+>> 这将导致工作器中断本身。
+>
+>来看一看setCorePoolSize这个方法：
+>
+>```JAVA
+>/**
+> * 设置核心线程数。这会覆盖构造函数中设置的任何值。如果新值小于当前值，多余的现有线程将在下次空闲时终止。
+> * 如果更大，则将在需要时启动新线程以执行任何排队的任务。
+> *
+> * @param corePoolSize the new core size
+> * @throws IllegalArgumentException if {@code corePoolSize < 0}
+> * @see #getCorePoolSize
+> */
+>public void setCorePoolSize(int corePoolSize) {
+>    if (corePoolSize < 0)
+>        throw new IllegalArgumentException();
+>    int delta = corePoolSize - this.corePoolSize;
+>    this.corePoolSize = corePoolSize;
+>    if (workerCountOf(ctl.get()) > corePoolSize)
+>        interruptIdleWorkers();
+>    else if (delta > 0) {
+>        // 我们真的不知道“需要”多少新线程。作为一种启发式方法，
+>        // 预先启动足够多的新workers（直到新的核心大小）来处理队列中当前的任务数量，
+>        // 但如果队列在此过程中变空，则停止。
+>        int k = Math.min(delta, workQueue.size());
+>        while (k-- > 0 && addWorker(null, true)) {
+>            if (workQueue.isEmpty())
+>                break;
+>        }
+>    }
+>}
+>```
+>
+>走到interruptIdleWorkers方法：
+>
+>```java
+>private void interruptIdleWorkers() {
+>	interruptIdleWorkers(false);
+>}
+>
+>private void interruptIdleWorkers(boolean onlyOne) {
+>    final ReentrantLock mainLock = this.mainLock;
+>    mainLock.lock();
+>    try {
+>        for (Worker w : workers) {
+>            Thread t = w.thread;
+>            if (!t.isInterrupted() && w.tryLock()) {
+>                try {
+>                    t.interrupt();
+>                } catch (SecurityException ignore) {
+>                } finally {
+>                    w.unlock();
+>                }
+>            }
+>            if (onlyOne)
+>                break;
+>        }
+>    } finally {
+>        mainLock.unlock();
+>    }
+>}
+>```
+>
+>要点就在于这个tryLock方法了：
+>
+>```java
+>public boolean tryLock() {
+>	return tryAcquire(1);
+>}
+>
+>protected boolean tryAcquire(int unused) {
+>    if (compareAndSetState(0, 1)) {
+>        setExclusiveOwnerThread(Thread.currentThread());
+>        return true;
+>    }
+>    return false;
+>}
+>```
+>
+>如果我们是基于AQS实现的不可重入锁也就是上面这样的写法，那么当线程在执行任务的时候我们调用`setCorePoolSize`方法一直走到这里这个tryLock肯定是返回false的（在执行任务的`worker`的`state`是1，因为获取了锁，所以这里通过`compareAndSetState(0, 1)`方法想要获取锁是一定会失败的），也就是说在执行任务的线程是不会被中断的，但如果变成可重入锁的话那么这里就不是这样写的了，大家可以看一看`ReentrantLock`里面`tryAcquire`的写法每重入一次`state+1`，所以说即使当前线程在执行任务任然有可能被拿到锁，被拿到锁了的话照着上面方法的逻辑就会被中断，对于上面回答的分析到此就结束啦。`interruptIdleWorkers`方法在后面讲`shutdown`方法的时候会具体讲解，可以先看下去到时候再回过头来理解。
+>
+>这里再插一嘴，如果理解了上面的问题，那么肯定就知道`tryAcquire` 方法是根据 `state` 是否是 0 来判断的，所以我们在构造`worker`的时候，也就是调用`Worker(Runnable firstTask)`这个方法生成`worker`对象的时候要`setState(-1)`，就是为了是为了禁止在执行任务前对线程进行中断。
+
 #### Woker.run()
 
 在上面的`addWorker`方法中看到如果线程添加成功就启动`t.start()`，相当于执行Worker 的 run() 方法：
@@ -720,8 +880,13 @@ try {
     while (task != null || (task = getTask()) != null) {
         // Worker加锁，本质是AQS获取资源并且尝试CAS更新state由0更变为1
         w.lock();
-        // 如果线程池状态为 >= STOP（即 STOP，TIDYING，TERMINATED ）时，则线程应该中断
-        // 如果线程池状态 < STOP, 线程不应该中断,如果中断了（Thread.interrupted() 返回 true，并清除标志位）,再次判断线程池状态（防止在清除标志位时执行了 shutdownNow() 这样的方法）,如果此时线程池为 STOP，执行线程中断
+        // 只有以下两种情况需要中断当前线程
+        // 1、已经执行shutdownNow方法但还未中断当前worker线程
+        // （shutdownNow方法中断当前线程的操作可能晚于任务执行）
+        // 所以需要执行wt.interrupt()方法恢复该worker的线程的中断标记
+        // 2、已经执行shutdownNow方法并且shutdownNow方法也成功中断了这个
+        // worker的线程，由于Thread.interrupted()会重置线程的中断状态，
+        // 所以需要执行wt.interrupt()方法恢复该worker的线程的中断标记
         if ((runStateAtLeast(ctl.get(), STOP) ||
              (Thread.interrupted() &&
               runStateAtLeast(ctl.get(), STOP))) &&
@@ -841,9 +1006,17 @@ private Runnable getTask() {
 }
 ```
 
+首先是第一个 if 判断，当运行状态处于非 RUNNING 状态，此外 rs >= STOP（线程池是否正在 stop）或阻塞队列是否为空。则将 workerCount 减 1 并返回 null。为什么要减 1 呢，因为此处其实是去获取一个 task，但是发现处于停止状态了，也就是没必要再去获取运行任务了，那这个线程就没有存在的意义了。后续也会在 `processWorkerExit` 将该线程移除。
+
+第二个 if 条件目的是控制线程池的有效线程数量。由上文中的分析可以知道，在执行 execute 方法时，如果当前线程池的线程数量超过了 corePoolSize 且小于 maximumPoolSize，并且 workQueue 已满时，则可以增加工作线程，但这时如果超时没有获取到任务，也就是 timedOut 为 true 的情况，说明 workQueue 已经为空了，也就说明了当前线程池中不需要那么多线程来执行任务了，可以把多于 corePoolSize 数量的线程销毁掉，保持线程数量在 corePoolSize 即可。
+
+什么时候会销毁？当然是 runWorker 方法执行完之后，也就是 Worker 中的 run 方法执行完，由 JVM 自动回收。
+
+getTask 方法返回 null 时，在 runWorker 方法中会跳出 while 循环，然后会执行 processWorkerExit 方法。
+
 #### processWorkerExit
 
-再来看看`runWorker`方法中线程最后执行的`processWorkerExit`方法：
+分两种情况：
 
 - 任务异常退出, 则在加个worker回来, 当前任务是丢了的
 - 任务不是异常退出:
@@ -879,10 +1052,14 @@ private void processWorkerExit(Worker w, boolean completedAbruptly) {
     //如果任务是异常结束的,就增加worker
     //注: 别问我为啥上面要删除worker,还要再加,不删是不是不用加了。明确下那个任务已经退出getTask那块的死循环了,永远回不去了,回不去就说明没有任务可以执行了，只能先删掉然后再新增worker.
     if (runStateLessThan(c, STOP)) {
+         // 如果不是发生异常被淘汰的
         if (!completedAbruptly) {
+            // 线程池中允许存活的最小线程数
             int min = allowCoreThreadTimeOut ? 0 : corePoolSize;
+            // 如果所有线程都允许超时并且此刻任务队列不为空则代表至少需要一个线程来执行剩余的所有任务
             if (min == 0 && ! workQueue.isEmpty())
                 min = 1;
+            // 如果此刻线程池中的线程数满足上面那个min值的话代表不需要额外创建新的worker来处理剩余的任务
             if (workerCountOf(c) >= min)
                 return; // replacement not needed
         }
@@ -890,6 +1067,8 @@ private void processWorkerExit(Worker w, boolean completedAbruptly) {
     }
 }
 ```
+
+> 由此可见，线程池中线程的回收依赖JVM自动的回收，线程池做的工作是根据当前线程池的状态维护一定数量的线程引用，防止这部分线程被JVM回收，当线程池决定哪些线程需要回收时，只需要将其引用消除即可。
 
 #### tryTerminate
 
@@ -946,7 +1125,7 @@ final void tryTerminate() {
 1. 调用了shutdown方法之后并且线程池中的任务都被执行完成之后
 2. 调用了shutdownNow方法之后
 
-> 但是为什么需要在processWorkerExit与addWorkerFailed中调用这个tryTerminate方法呢？
+> **那什么时候需要去调用这个方法呢？**
 >
 > 作者在这个方法的注释如下
 >
@@ -955,8 +1134,23 @@ final void tryTerminate() {
 > ```
 >
 > tryTerminate方法必须在任何可能导致终止的操作中之后被调用，例如减少线程池的worker数量或者当关闭线程池从队列中移除任务的时候。
+>
+> 最后再来思考一个问题：在 runWorker 方法中，执行任务时对 Worker 对象 w 进行了 lock 操作，为什么要在执行任务的时候对每个工作线程都加锁呢？
+>
+> 下面仔细分析一下：
+>
+> - 在 `getTask` 方法中，如果这时线程池的状态是 SHUTDOWN 并且 `workQueue` 为空，那么就应该返回 null 来结束这个工作线程，而使线程池进入 SHUTDOWN 状态需要调用`shutdown` 方法；
+> - `shutdown` 方法会调用 `interruptIdleWorkers` 来中断空闲的线程，`interruptIdleWorkers` 持有 `mainLock`，会遍历 `workers` 来逐个判断工作线程是否空闲。但 `getTask` 方法中没有`mainLock`；
+> - 在 `getTask` 中，如果判断当前线程池状态是 RUNNING，并且阻塞队列为空，那么会调用 `workQueue.take()` 进行阻塞；
+> - 如果在判断当前线程池状态是 RUNNING 后，这时调用了 `shutdown` 方法把状态改为了 SHUTDOWN，这时如果不进行中断，那么当前的工作线程在调用了 `workQueue.take()` 后会一直阻塞而不会被销毁，因为在 SHUTDOWN 状态下不允许再有新的任务添加到 `workQueue` 中，这样一来线程池永远都关闭不了了；
+> - 由上可知，`shutdown` 方法与 `getTask` 方法（从队列中获取任务时）存在竞态条件；
+> - 解决这一问题就需要用到线程的中断，也就是为什么要用 `interruptIdleWorkers` 方法。在调用 `workQueue.take()` 时，如果发现当前线程在执行之前或者执行期间是中断状态，则会抛出 `InterruptedException`，解除阻塞的状态；
+> - 但是要中断工作线程，还要判断工作线程是否是空闲的，如果工作线程正在处理任务，就不应该发生中断；
+> - 所以 `Worker` 继承自 AQS，在工作线程处理任务时会进行 `lock`，`interruptIdleWorkers` 在进行中断时会使用 `tryLock` 来判断该工作线程是否正在处理任务，如果 `tryLock` 返回 true，说明该工作线程当前未执行任务，这时才可以被中断。
 
 上述的分析中涉及到AQS的相关知识，可以看看我的这篇文章 [万字长文带你玩转ReentrantLock](https://juejin.cn/post/7127820316797042724)，其中有讲解到AQS的知识。
+
+关于线程回收的相关解析可以看看这篇 [同事有话说：ThreadPoolExecutor是怎么回收线程的](https://juejin.cn/post/6922069411981426702#heading-4)。
 
 ### shutdown
 
@@ -998,6 +1192,12 @@ private void advanceRunState(int targetState) {
 将线程池状态修改为SHUTDOWN之后接着调用interruptIdleWorkers方法**唤醒那些不是正在执行任务的worker（空闲的worker）**
 
 #### interruptIdleWorkers
+
+>`interruptIdleWorkers(boolean onlyOne)` 如果 `ONLY_ONE = true` 那么就的最多让一个空闲线程发生中断，`ONLY_ONE = false` 时是所有空闲线程都会发生中断。那线程什么时候会处于空闲状态呢？
+>
+>一是线程数量很多，任务都完成了；二是线程在 `getTask` 方法中执行 `workQueue.take()` 时，如果不执行中断会一直阻塞。
+>
+>所以每次在工作线程结束时调用 `tryTerminate` 方法来尝试中断一个空闲工作线程，避免在队列为空时取任务一直阻塞的情况。
 
 ```java
 private void interruptIdleWorkers(boolean onlyOne) {
@@ -1043,7 +1243,7 @@ protected boolean tryAcquire(int unused) {
 }
 ```
 
-很显然如果worker正在执行任务，这个tryAcquire方法必定时返回false的，所以interruptIdleWorkers方法会将那些不是正在执行任务的worker或者还未开始执行任务的worker（还没执行到runWorker中的while循环中）都设置为中断状态，这样的话这些被中断的线程在下次执行getTask方法调用队列的take获取poll方法拿任务的时候就不会被阻塞了，不懂原理的可以去看LockSupport和AQS相关的知识点。阻塞队列都是基于这两个东西实现的。接下来这些永远不会被阻塞的worker就会不停的消耗队列中的任务然后退出，接下来那些刚刚由于真正执行任务而没有设置中断标记的worker执行下一次getTask的时候会发现线程池的状态已经为SHUTDOWN了慢慢的在队列中的任务都被执行完毕之后就会进入getTask方法的这段退出代码中
+很显然如果`worker`正在执行任务，这个`tryAcquire`方法必定时返回false的，所以`interruptIdleWorkers`方法会将那些不是正在执行任务的`worker`或者还未开始执行任务的`worker`（还没执行到`runWorker`中的while循环中）都设置为中断状态，这样的话这些被中断的线程在下次执行`getTask`方法调用队列的`take`获取`poll`方法拿任务的时候就不会被阻塞了，不懂原理的可以去看`LockSupport`和AQS相关的知识点。阻塞队列都是基于这两个东西实现的。接下来这些永远不会被阻塞的`worker`就会不停的消耗队列中的任务然后退出，接下来那些刚刚由于真正执行任务而没有设置中断标记的`worker`执行下一次`getTask`的时候会发现线程池的状态已经为SHUTDOWN了慢慢的在队列中的任务都被执行完毕之后就会进入`getTask`方法的这段退出代码中
 
 ```java
 if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) {
@@ -1128,7 +1328,7 @@ private Runnable getTask() {
 
 接下来我们继续看一下是如何将那些未完成的任务重现保存起来的。
 
-###  drainQueue方法
+#### drainQueue方法
 
 ```java
 private List<Runnable> drainQueue() {
