@@ -119,7 +119,7 @@ public static class D implements A,B{
 
 运行结果如下：
 
-![image-20220815153651742](../../../../.config/Typora/typora-user-images/image-20220815153651742.png)
+![image-20220816094347054](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208160943135.png)
 
 如果一定要这么写的话，IDEA也给我们提示了，指定需要实现哪个接口的方法即可：
 
