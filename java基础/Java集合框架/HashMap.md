@@ -67,7 +67,54 @@ public HashMap(int initialCapacity, float loadFactor) ;
 
 [HashMap 的 7 种遍历方式与性能分析！](https://mp.weixin.qq.com/s/zQBN3UvJDhRTKP6SzcZFKw)
 
-## 7.ConcurrentHashMap
+## 7.JDK8中的HashMap什么时候将链表转化为红黑树？为什么要使用红黑树？
+
+1. 这个题很容易答错， 大部分答案就是： **当链表中的元素个数大于8时就会把链表转化为红黑树**。 但是其实还有另外一个限制：  当发现链表中的元素个数大于8之后， 还会判断一下当前数组的长度， **如果数组长度小于64时， 此时并不会转化为红黑树， 而是进行扩容**。 只有当链表中的元素个数大于8， 并且数组的长度大于 等于64时才会将链表转为红黑树。 上面扩容的原因是， 如果数组长度还比较小， 就先利用扩容来缩小链表的长度。 
+2. 当元素个数小于一个阈值时， 链表整体的插入查询效率要高于红黑树， 当元素个数大于此阈值时， 链表整 体的插入查询效率要低于红黑树。 此阈值在HashMap中为8 
+
+## 8.JDK8中HashMap的put方法的实现过程？
+
+1.根据key生成hashcode（经过扰动函数）
+
+2.判断当前HashMap对象中的数组是否为空， 如果为空则初始化该数组
+
+3.根据逻辑**与运算**，算出hashcode基于当前数组对应的数组下标i
+
+4.判断数组的第i个位置的元素 （tab[i]） 是否为空
+
+- 如果空，则将key，value封装为Node对象赋值给tab[i]
+
+- 如果不为空：
+
+  - 如果put方法传入进来的key等于tab[i] .key， 那么证明存在相同的key
+
+  - 如果不等于tab[i] .key， 则：
+    - 如果tab[i]的类型是TreeNode， 则表示数组的第i位置上是一颗红黑树， 那么将key和 value插入到红黑树中， 并且在插入之前会判断在红黑树中是否存在相同的key
+    - 如果tab[i]的类型不是TreeNode， 则表示数组的第i位置上是一个链表， 那么遍历链表寻  找是否存在相同的key， 并且在遍历的过程中会对链表中的结点数进行计数， 当遍历到最后一个结点时， 会将key ,value封装为Node插入到链表的尾部， 同时判断在插入新结点之 前的链表结点个数是不是大于等于8，如果是，则将链表改为红黑树。
+
+  -  如果上述步骤中发现存在相同的key，则根据onlyIfAbsent标记来判断是否需要更新value值，然后返回oldValue
+
+5.modCount++
+
+6.HashMap的元素个数size加1
+
+7.如果size大于扩容的阈值， 则进行扩容 
+
+## 9.JDK8中HashMap的get方法的实现过程
+
+![image-20220817101800978](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208171018027.png)
+
+## 10.HashMap中变量modCount的真实作用是什么
+
+[面试官：HashMap中变量modCount的真实作用是什么](https://zhuanlan.zhihu.com/p/430069424)
+
+[谈谈fail-fast与fail-safe是什么以及工作机制](https://zhuanlan.zhihu.com/p/37476508)
+
+[hashmap遍历时用map.remove方法为什么会报错？](https://juejin.cn/post/6844903812092674056)
+
+[java中foreach实现原理](https://juejin.cn/post/6844904003600384013)
+
+## ConcurrentHashMap
 
 ![image-20220807152021143](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208071520214.png)
 
