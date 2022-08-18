@@ -488,3 +488,4 @@ SQL特征生成分两部分组成。
 
 因此可以看出SQL解析的优势是很明显的
 
+参考链接：[Java 全栈知识体系](https://pdai.tech/md/db/sql-mysql/sql-mysql-execute.html)
