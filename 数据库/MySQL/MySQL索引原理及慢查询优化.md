@@ -252,3 +252,5 @@ alter table stage_poi add index idx_acc_status(accurate_result,sync_status);
 ```
 
 我们再来回顾一下分析问题的过程，单表查询相对来说比较好优化，大部分时候只需要把where条件里面的字段依照规则加上索引就好，如果只是这种“无脑”优化的话，显然一些区分度非常低的列，不应该加索引的列也会被加上索引，这样会对插入、更新性能造成严重的影响，同时也有可能影响其它的查询语句。所以我们第4步调查SQL的使用场景非常关键，我们只有知道这个业务场景，才能更好地辅助我们更好的分析和优化查询语句
+
+参考链接：[Java 全栈知识体系](https://pdai.tech/md/db/sql-mysql/sql-mysql-index-improve-mt.html)
