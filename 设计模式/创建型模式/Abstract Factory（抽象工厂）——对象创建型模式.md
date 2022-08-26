@@ -11,7 +11,7 @@
 1. 一系列相关产品， 例如 `椅子`Chair 、  `沙发`Sofa和 `咖啡桌`Coffee­Table 。
 2. 系列产品的不同变体。 例如， 你可以使用 `现代`Modern 、  `维多利亚`Victorian 、  `装饰风艺术`Art­Deco等风格生成 `椅子` 、  `沙发`和 `咖啡桌` 。
 
-![image-20220302202917109](Abstract%20Factory%EF%BC%88%E6%8A%BD%E8%B1%A1%E5%B7%A5%E5%8E%82%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220302202917109.png)
+![image-20220826141736348](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261417412.png)
 
 为了保证各个产品之间的可以执行，一个应用不应该为一个特定的外观或者风格进行硬编码，在整个应用中实例化特定的产品类型将使得后续难以进行修改。
 
@@ -23,7 +23,7 @@
 
 那么该如何处理产品变体呢？ 对于系列产品的每个变体， 我们都将基于 `抽象工厂`接口创建不同的工厂类。 每个工厂类都只能返回特定类别的产品， 例如，  `现代家具工厂`Modern­Furniture­Factory只能创建 `现代椅子`Modern­Chair 、  `现代沙发`Modern­Sofa和 `现代咖啡桌`Modern­Coffee­Table对象。
 
-![image-20220302203938157](Abstract%20Factory%EF%BC%88%E6%8A%BD%E8%B1%A1%E5%B7%A5%E5%8E%82%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220302203938157.png)
+![image-20220826141741529](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261417592.png)
 
 客户仅通过抽象工厂接口创建产品，而不知道那些类实现了特定的产品。换言之，客户仅通过抽象类定义的接口交互，而不是用特定的具体类的接口。同时抽象工厂也增强了产品系列之间的依赖关系，一个维多利亚风格的咖啡桌应该与维多利亚风格的沙发，椅子一起使用，这一约束条件是作为使用维多利亚风格的具体工厂类的结果自动加上的。
 
@@ -38,7 +38,7 @@
 
 ## 5.结构
 
-![image-20220303091300419](Abstract%20Factory%EF%BC%88%E6%8A%BD%E8%B1%A1%E5%B7%A5%E5%8E%82%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220303091300419.png)
+![image-20220826141748287](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261417361.png)
 
 ## 6.参与者
 

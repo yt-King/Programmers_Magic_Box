@@ -14,21 +14,21 @@
 
 **假设**你正在开发一款物流管理应用。 最初版本只能处理卡车运输， 因此大部分代码都在位于名为 `卡车`的类中。一段时间后， 这款应用变得极受欢迎。 你每天都能收到十几次来自海运公司的请求， 希望应用能够支持海上物流功能。但是代码问题该如何处理呢？ 目前， 大部分代码都与 `卡车`类相关。 在程序中添加 `轮船`类需要修改全部代码。 更糟糕的是， 如果你以后需要在程序中支持另外一种运输方式， 很可能需要再次对这些代码进行大幅修改。
 
-![image-20220306111637815](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220306111637815.png)
+![image-20220826141841629](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418692.png)
 
 ## 3.解决方案
 
 工厂方法模式建议使用特殊的*工厂*方法代替对于对象构造函数的直接调用 （即使用 `new`运算符）。 不用担心， 对象仍将通过 `new`运算符创建， 只是该运算符改在工厂方法中调用罢了。 工厂方法返回的对象通常被称作 “产品”。
 
-![image-20220306111650560](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220306111650560.png)
+![image-20220826141845313](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418368.png)
 
  现在你可以在子类中重写工厂方法， 从而改变其创建产品的类型。但有一点需要注意:仅当这些产品具有共同的基类或者接口时， 子类才能返回不同类型的产品， 同时基类中的工厂方法还应将其返回类型声明为这一共有接口。
 
-![image-20220306111838382](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220306111838382.png)
+![image-20220826141848260](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418322.png)
 
 举例来说，  `卡车`Truck和 `轮船`Ship类都必须实现 `运输`Transport接口， 该接口声明了一个名为 `deliver`交付的方法。 每个类都将以不同的方式实现该方法： 卡车走陆路交付货物， 轮船走海路交付货物。  `陆路运输`Road­Logistics类中的工厂方法返回卡车对象， 而 `海路运输`Sea­Logistics类则返回轮船对象。
 
-![image-20220306111938779](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220306111938779.png)
+![image-20220826141851192](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418296.png)
 
 ## 4.适用性
 
@@ -38,7 +38,7 @@
 
 ## 5.结构
 
-![image-20220306135234972](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220306135234972.png)
+![image-20220826141854702](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418776.png)
 
 ## 6.参与者
 
@@ -64,7 +64,7 @@
 
 工厂方法不再将和特定应用有关的类绑定到你的代码中。代码仅处理Product接口，因此他可以与用户定义的任何ConcreteProduct类一起使用。
 
-![image-20220307170524389](Factory%20Method%EF%BC%88%E5%B7%A5%E5%8E%82%E6%96%B9%E6%B3%95%EF%BC%89%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F.images/image-20220307170524389.png)
+![image-20220826141859055](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261418120.png)
 
 ## 8.实现
 

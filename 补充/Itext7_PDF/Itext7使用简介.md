@@ -58,7 +58,7 @@ dependencies {
 
 结果如下图所示：
 
-![image-20220211230701265](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220211230701265.png)
+![image-20220826141534509](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415593.png)
 
 ### 2.2-解决中文不显示问题
 
@@ -98,7 +98,7 @@ public String list() throws FileNotFoundException {
 
 效果展示：
 
-![image-20220212210658185](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212210658185.png)
+![image-20220826141538793](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415860.png)
 
 ### 2.4-写入图片
 
@@ -124,15 +124,15 @@ public String image() throws FileNotFoundException, MalformedURLException {
 
 效果展示：
 
-![image-20220212213129749](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212213129749.png)
+![image-20220826141544083](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415189.png)
 
 创建图像对象时可以设置图像位置：
 
-![image-20220212213318401](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212213318401.png)
+![image-20220826141547829](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415944.png)
 
 不设置位置的话就是默认的衔接状态，也可以通过set方法设置图片的各种属性：
 
-![image-20220212213447074](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212213447074.png)
+![image-20220826141551319](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415394.png)
 
 ### 2.5-创建table
 
@@ -177,7 +177,7 @@ public void process(Table table, String line, PdfFont font, boolean isHeader) {
 
 效果图如下：
 
-![image-20220212221431603](Itext7%E4%BD%BF%E7%94%A8%E7%AE%80%E4%BB%8B.images/image-20220212221431603.png)
+![image-20220826141556587](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-8/202208261415648.png)
 
 ## 3.HTML 2 PDF
 
