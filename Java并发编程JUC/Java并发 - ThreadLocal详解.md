@@ -206,6 +206,10 @@ public Connection getConnection() {
 - ThreadLocalMap的Entry实现继承了WeakReference<ThreadLocal<?>>
 - 该方法仅仅用了一个Entry数组来存储Key, Value; Entry并不是链表形式, 而是每个bucket里面仅仅放一个Entry
 
+**下面用一张图总结一下引用关系：**
+
+![image-20220930165651404](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20220930165651404.png)
+
 ### ThreadLocalMap **的四个属性**
 
 - Entry[] table
@@ -651,6 +655,8 @@ private Entry getEntryAfterMiss(ThreadLocal<?> key, int i, Entry e) {
 由于`ThreadLocal`的弱引用会造成一个非常经典的问题，那就是**内存泄漏**
 
 >ThreadLocalMap使用ThreadLocal的弱引用作为key，如果一个ThreadLocal没有外部强引用来引用它，那么系统GC的时候，这个ThreadLocal势必会被回收，这样一来，ThreadLocalMap中就会出现key为null的Entry，就没有办法访问这些key为null的Entry的value，如果当前线程再迟迟不结束的话，这些key为null的Entry的value就会一直存在一条强引用链：**Current Thread Ref -> Current Thread -> Map -> Entry ->value**永远无法回收，造成内存泄漏。
+>
+>![image-20220930170538712](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20220930170538712.png)
 
 既然如此那`ThreadLocal`为啥还要使用弱引用呢？
 
@@ -666,6 +672,44 @@ private Entry getEntryAfterMiss(ThreadLocal<?> key, int i, Entry e) {
 ThreadLocalMap的生命周期跟Thread一样长，如果都没有手动删除对应key，都会导致内存泄漏,但是弱引用的话进行set、get、remove方法时，会清除key为null的value，比较方便一点。
 
 > 因此，ThreadLocal内存泄漏的根源是：由于ThreadLocalMap的生命周期跟Thread一样长，如果没有手动删除对应key就会导致内存泄漏，而**不是因为弱引用。**所以推荐每次使用完`ThreadLocal`，都调用它的`remove()`方法，清除数据。
+
+## **为什么用ThreadLocal做key？**
+
+考虑这种情况：假如使用Thread做key时，你的代码中定义了3个ThreadLocal对象，那么，通过Thread对象，它怎么知道要获取哪个ThreadLocal对象呢？
+
+```java
+@Service
+public class ThreadLocalService {
+    private static final ThreadLocal<Integer> threadLocal1 = new ThreadLocal<>();
+    private static final ThreadLocal<Integer> threadLocal2 = new ThreadLocal<>();
+    private static final ThreadLocal<Integer> threadLocal3 = new ThreadLocal<>();
+}
+```
+
+如下图所示：
+
+<img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20220930170347232.png" alt="image-20220930170347232" style="zoom:67%;" />
+
+因此，不能使用Thread做key，而应该改成用ThreadLocal对象做key，这样才能通过具体ThreadLocal对象的get方法，轻松获取到你想要的ThreadLocal对象。
+
+如下图所示：
+
+<img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20220930170413945.png" alt="image-20220930170413945" style="zoom:67%;" />
+
+## **父子线程如何共享数据？**
+
+> 使用`InheritableThreadLocal`，它是JDK自带的类，继承了`ThreadLocal`类。
+
+在Thread类中除了成员变量threadLocals之外，还有另一个成员变量：inheritableThreadLocals。
+
+Thread类的部分代码如下：
+
+```java
+ThreadLocal.ThreadLocalMap threadLocals = null;
+ThreadLocal.ThreadLocalMap inheritableThreadLocals = null;
+```
+
+最关键的一点是，在它的init方法中会将父线程中往ThreadLocal设置的值，拷贝一份到子线程中。
 
 ## 扩展
 
