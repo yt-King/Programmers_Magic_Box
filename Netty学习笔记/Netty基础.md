@@ -1,4 +1,4 @@
-# Netty
+# Netty基础
 
 ## 1、什么是Netty
 
@@ -32,7 +32,7 @@ Netty 对 JDK 自带的 NIO 的 API 进行了封装，解决了上述问题。
 
 5）社区活跃、不断更新：社区活跃，版本迭代周期短，发现的 Bug 可以被及时修复，同时，更多的新功能会被加入。
 
-## 上手练习
+## 4、上手练习
 
 你的第一个Telnet服务：[使用Netty创建Telnet服务](https://www.jianshu.com/p/5dcbc0456376)
 
@@ -40,27 +40,38 @@ Netty 对 JDK 自带的 NIO 的 API 进行了封装，解决了上述问题。
 
 > 可能会遇到的问题：在命令行工具里可能会提示没有telnet命令，解决方法：[Windows系统开启telnet命令](https://help.aliyun.com/document_detail/40796.html)
 
-## 第一个 Netty 应用
+## 5、第一个 Netty 应用
+
+> 之前的练习只是简单的做了一个服务端，甚至连客户端都没有，接下来的这个是简易的但是是完整的一个例子。
 
 [《Netty 实战(精髓)》：第一个 Netty 应用 ](https://waylau.com/essential-netty-in-action/GETTING%20STARTED/Your%20first%20Netty%20application.html)
 
-## Netty基本构建模块
+示例仓库地址：https://github.com/yt-King/FirstNettyApplication
+
+## 6、Netty基本构建模块
+
+> Netty 是一个非阻塞框架。与阻塞 IO 相比，这会导致高吞吐量。了解非阻塞 IO 对于了解 Netty 的核心组件及其关系至关重要。
 
 ### BOOTSTRAP
 
-Netty 应用程序通过设置 bootstrap（引导）类的开始，该类提供了一个 用于应用程序网络层配置的容器。
+Netty 应用程序通过设置 bootstrap（引导）类的开始，该类提供了一个 用于应用程序网络层配置的容器。有两种类型的引导：一种用于客户端（简单地称为 Bootstrap），而另一种 （ServerBootstrap）用于服务器。无论你的应用程序使用哪种协议或者处理哪种类型的数据， 唯一决定它使用哪种引导类的是它是作为一个客户端还是作为一个服务器。下表比较了这两种 类型的引导类：
+
+| 类别                  | Bootstrap            | ServerBootstrap    |
+| --------------------- | -------------------- | ------------------ |
+| 网络编程中的作用      | 连接到远程主机和端口 | 绑定到一个本地端口 |
+| EventLoopGroup 的数目 | 1                    | 2                  |
+
+引导一个客户端只需要一个 EventLoopGroup，但是一个 ServerBootstrap 则需要两个（也可以是同一个实例）。为什么呢？
+
+> 因为服务器需要两组不同的 Channel。第一组将只包含一个 ServerChannel，代表服务器自身的已绑定到某个本地端口的正在监听的套接字。而第二组将包含所有已创建的用来处理传入客户端连接（对于每个服务器已经接受的连接都有一个）的 Channel。下图说明了这个模 型，并且展示了为何需要两个不同的 EventLoopGroup：
+>
+> ![image-20221008161426106](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20221008161426106.png)
+>
+> 与 ServerChannel 相关联的 EventLoopGroup 将分配一个负责为传入连接请求创建 Channel 的 EventLoop。一旦连接被接受，第二个 EventLoopGroup 就会给它的 Channel 分配一个 EventLoop
 
 ### CHANNEL
 
-底层网络传输 API 必须提供给应用 I/O操作的接口，如读，写，连接，绑定等等。对于我们来说，这是结构几乎总是会成为一个“socket”。 Netty 中的接口 Channel 定义了与 socket 丰富交互的操作集：bind, close, config, connect, isActive, isOpen, isWritable, read, write 等等。 Netty 提供大量的 Channel 实现来专门使用。这些包括 AbstractChannel，AbstractNioByteChannel，AbstractNioChannel，EmbeddedChannel， LocalServerChannel，NioSocketChannel 等等。
-
-> Netty 的设计保证程序处理事件不会有同步：
->
-> ![image-20221008143921075](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20221008143921075.png)
->
-> 该图显示，一个 EventLoopGroup 具有一个或多个 EventLoop。
->
-> 当创建一个 Channel，Netty 通过 一个单独的 EventLoop 实例来注册该 Channel的使用寿命。这就是为什么你的应用程序不需要同步 Netty 的 I/O操作;所有 Channel 的 I/O 始终用相同的线程来执行。
+基本的 I/O 操作（bind()、connect()、read()和 write()）依赖于底层网络传输所提 供的原语。在基于 Java 的网络编程中，其基本的构造是 class Socket。Netty 的 Channel 接 口所提供的 API，大大地降低了直接使用 Socket 类的复杂性。此外，Channel 也是拥有许多 预定义的、专门化实现的广泛类层次结构的channel类。
 
 ### CHANNELHANDLER
 
@@ -74,11 +85,20 @@ ChannelPipeline 提供了一个容器给 ChannelHandler 链并提供了一个API
 
 ### EVENTLOOP
 
-EventLoop 用于处理 Channel 的 I/O 操作。一个单一的 EventLoop通常会处理多个 Channel 事件。一个 EventLoopGroup 可以含有多于一个的 EventLoop 和 提供了一种迭代用于检索清单中的下一个。
+EventLoop 定义了 Netty 的核心抽象，用于处理连接的生命周期中所发生的事件。
+
+> 下图在高层次上说明了 Channel、EventLoop、Thread 以及 EventLoopGroup 之间的关系：
+>
+> ![image-20221008152944413](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20221008152944413.png)
+>
+> - 一个 EventLoopGroup 包含一个或者多个 EventLoop；
+> - 一个 EventLoop 在它的生命周期内只和一个 Thread 绑定；
+> - 所有由 EventLoop 处理的 I/O 事件都将在它专有的 Thread 上被处理；
+> - 一个 Channel 在它的生命周期内只注册于一个 EventLoop； 
+> - 一个 EventLoop 可能会被分配给一个或多个 Channel。
+>
+> 在这种设计中，一个给定 Channel 的 I/O 操作都是由相同的 Thread 执行的，实际上**消除了对于同步的需要**
 
 ### CHANNELFUTURE
 
-Netty 所有的 I/O 操作都是异步。因为一个操作可能无法立即返回，我们需要有一种方法在以后确定它的结果。出于这个目的，Netty 提供了接口 ChannelFuture,它的 addListener 方法注册了一个 ChannelFutureListener ，当操作完成时，可以被通知（不管成功与否）。
-
-## 核心功能
-
+Netty 中所有的 I/O 操作都是异步的。因为一个操作可能不会 立即返回，所以我们需要一种用于在之后的某个时间点确定其结果的方法。为此，Netty 提供了 ChannelFuture 接口，其 addListener()方法注册了一个 ChannelFutureListener，以 便在某个操作完成时（无论是否成功）得到通知
