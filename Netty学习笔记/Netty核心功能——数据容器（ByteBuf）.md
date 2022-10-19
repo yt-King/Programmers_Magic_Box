@@ -8,12 +8,21 @@
 Netty 的数据处理 API 通过两个组件暴露——`abstract class ByteBuf` 和 `interface  ByteBufHolder`，下面是一些 ByteBuf API 的优点：
 
 - 它可以被用户自定义的缓冲区类型扩展；
+
 - 通过内置的复合缓冲区类型实现了透明的零拷贝；
+
+  > 零拷贝解析见文末
+
 - 容量可以按需增长（类似于 JDK 的 StringBuilder）；
+
 - 在读和写这两种模式之间切换不需要调用 ByteBuffer 的 flip()方法；
+
 - 读和写使用了不同的索引；
+
 - 支持方法的链式调用；
+
 - 支持引用计数；
+
 - 支持池化。
 
 对比ByteBuffer的缺点：
@@ -289,3 +298,32 @@ for (int i = 0;i<buf.capacity();i++){
 > ![image-20221018171737952](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221018171737952.png)
 
 ### 3.7 读/写操作
+
+有两种类别的读/写操作：
+
+- get()和 set()操作，从给定的索引开始，并且保持索引不变；
+- read()和 write()操作，从给定的索引开始，并且会根据已经访问过的字节数对索引进行调整。
+
+常用的 get()方法如下图：
+
+![image-20221019174207098](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221019174207098.png)
+
+常用的 set()方法如下图：
+
+![image-20221019174246152](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221019174246152.png)
+
+常用的 read()方法如下图：
+
+![image-20221019174405140](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221019174405140.png)
+
+常用的 write()方法如下图：
+
+![image-20221019174422075](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221019174422075.png)
+
+## 4、ByteBufHolder 接口
+
+
+
+## Tips：零拷贝
+
+> 零拷贝（Zero-Copy）是一种 `I/O` 操作优化技术，可以快速高效地将数据从文件系统移动到网络接口，而不需要将其从内核空间复制到用户空间。其在 `FTP` 或者 `HTTP` 等协议中可以显著地提升性能。但是需要注意的是，并不是所有的操作系统都支持这一特性，目前只有在使用 `NIO` 和 `Epoll` 传输时才可使用该特性，且不能用于实现了数据加密或者压缩的文件系统上。
