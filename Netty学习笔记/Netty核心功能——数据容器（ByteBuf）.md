@@ -8,21 +8,12 @@
 Netty 的数据处理 API 通过两个组件暴露——`abstract class ByteBuf` 和 `interface  ByteBufHolder`，下面是一些 ByteBuf API 的优点：
 
 - 它可以被用户自定义的缓冲区类型扩展；
-
 - 通过内置的复合缓冲区类型实现了透明的零拷贝；
-
-  > 零拷贝解析见文末
-
 - 容量可以按需增长（类似于 JDK 的 StringBuilder）；
-
 - 在读和写这两种模式之间切换不需要调用 ByteBuffer 的 flip()方法；
-
 - 读和写使用了不同的索引；
-
 - 支持方法的链式调用；
-
 - 支持引用计数；
-
 - 支持池化。
 
 对比ByteBuffer的缺点：
@@ -322,8 +313,100 @@ for (int i = 0;i<buf.capacity();i++){
 
 ## 4、ByteBufHolder 接口
 
+### 4.1 按需分配：ByteBufAllocator 接口
 
+> Netty 中内存分配有一个最顶层的抽象就是ByteBufAllocator，负责分配所有ByteBuf 类型的内存。他的一些操作如下：
 
-## Tips：零拷贝
+![image-20221020134402753](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221020134402753.png)
 
-> 零拷贝（Zero-Copy）是一种 `I/O` 操作优化技术，可以快速高效地将数据从文件系统移动到网络接口，而不需要将其从内核空间复制到用户空间。其在 `FTP` 或者 `HTTP` 等协议中可以显著地提升性能。但是需要注意的是，并不是所有的操作系统都支持这一特性，目前只有在使用 `NIO` 和 `Epoll` 传输时才可使用该特性，且不能用于实现了数据加密或者压缩的文件系统上。
+可以通过 `Channel`（每个都可以有一个不同的 `ByteBufAllocator` 实例）或者绑定到 `ChannelHandler` 的 `ChannelHandlerContext` 获取一个到 `ByteBufAllocator` 的引用，如下图所示：
+
+![image-20221020135103763](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221020135103763.png)
+
+Netty提供了两种`ByteBufAllocator`的实现：`PooledByteBufAllocator`和`UnpooledByteBufAllocator`。前者池化了ByteBuf的实例以提高性能并最大限度地减少内存碎片，这是通过一种 叫做`jemalloc`的方法来分配内存的（阅读资料：[jemalloc剖析](https://wertherzhang.com/jemalloc%E5%89%96%E6%9E%90/)）。后者的实现不池化`ByteBuf`实例，并且在每次它被调用时都会返回一个新的实例。
+
+### 4.2 Unpooled 缓冲区
+
+> 可能某些情况下，你未能获取一个到 ByteBufAllocator 的引用。对于这种情况，Netty 提 供了一个简单的称为 Unpooled 的工具类，它提供了静态的辅助方法来创建未池化的 ByteBuf 实例。他的一些操作如下：
+
+![image-20221020135640610](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221020135640610.png)
+
+### 4.3 ByteBufUtil 类
+
+> `ByteBufUtil` 提供了用于操作 `ByteBuf` 的静态的辅助方法。这个 API 是通用的，并且和池化无关。
+
+## 5、引用计数
+
+> 引用计数是一种通过在某个对象所持有的资源不再被其他对象引用时释放该对象所持有的资源来优化内存使用和性能的技术。`Netty` 在第 4 版中为 `ByteBuf` 和 `ByteBufHolder` 引入了 引用计数技术，它们都实现了 `interface ReferenceCounted`。
+
+### 5.1 基本原理
+
+1. 一个新创建的引用计数对象的初始引用计数是1。
+
+   ```java
+   ByteBuf buf = ctx.alloc().directbuffer();
+   assert buf.refCnt() == 1;
+   ```
+
+2. 当你释放掉引用计数对象，它的引用次数减1.如果一个对象的引用计数到达0，该对象就会被释放或者归还到创建它的对象池。
+
+   ```java
+   assert buf.refCnt() == 1;
+   // release() returns true only if the reference count becomes 0.
+   boolean destroyed = buf.release();
+   assert destroyed;
+   assert buf.refCnt() == 0;
+   ```
+
+3. 访问引用计数为0的引用计数对象会触发一次IllegalReferenceCountException。
+
+   ```java
+   assert buf.refCnt() == 0;
+   try {
+   buf.writeLong(0xdeadbeef);
+   throw new Error("should not reach here");
+   } catch (IllegalReferenceCountExeception e) {
+   // Expected
+   }
+   ```
+
+4. 只要引用计数对象未被销毁，就可以通过调用retain()方法来增加引用次数。
+
+   ```java
+   ByteBuf buf = ctx.alloc().directBuffer();
+   assert buf.refCnt() == 1;
+   
+   buf.retain();
+   assert buf.refCnt() == 2;
+   
+   boolean destroyed = buf.release();
+   assert !destroyed;
+   assert buf.refCnt() == 1;
+   ```
+
+### 5.2 谁来销毁
+
+一般的原则是，最后访问引用计数对象的部分负责对象的销毁。更具体地来说：
+
+- 如果一个[发送]组件要传递一个引用计数对象到另一个[接收]组件，发送组件通常不需要 负责去销毁对象，而是将这个销毁的任务推延到接收组件
+- 如果一个组件消费了一个引用计数对象，并且不知道谁会再访问它（例如，不会再将引用 发送到另一个组件），那么，这个组件负责销毁工作。
+
+### 5.3 内存泄漏问题
+
+引用计数的缺点是，引用计数对象容易发生泄露。因为JVM并不知道Netty的引用计数实现，当引用计数对象不 可达时，JVM就会将它们GC掉，即时此时它们的引用计数并不为0。一旦对象被GC就不能再访问，也就不能归还到缓冲池，所以会导致内存泄露。 庆幸的是，尽管发现内存泄露很难，但是Netty会对分配的缓冲区的1%进行采样，来检查你的应用中是否存在内存泄露。
+
+#### 内存泄露检查等级
+
+总共有4个内存泄露检查等级：
+
+- DISABLED – 完全禁用检查。不推荐。
+- SIMPLE – 检查1%的缓冲区是否存在内存泄露。默认。
+- ADVANCED – 检查1%的缓冲区，并提示发生内存泄露的位置
+- PARANOID – 与ADVANCED等级一样，不同的是会检查所有的缓冲区。对于自动化测试很有用，你可以让构建测试失败 如果构建输出中包含’LEAK’ 用JVM选项 `-Dio.netty.leakDetectionLevel` 来指定内存泄露检查等级
+
+#### 避免泄露最佳实践
+
+- 指定SIMPLE和PARANOI等级，运行单元测试和集成测试
+- 在将你的应用部署到整个集群前，尽可能地用足够长的时间，使用SIMPLE级别去调试你的程序，来看是否存在内存泄露
+- 如果存在内存泄露，使用ADVANCED级别去调试程序，去获取内存泄漏的位置信息
+- 不要将存在内存泄漏的应用部署到整个集群
