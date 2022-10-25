@@ -67,3 +67,48 @@
 下图展示了 EventLoop 通用的运行模式。每当事件发生时，应用程序都会将产生的事件放入事件队列当中，然后 EventLoop 会轮询从队列中取出事件执行或者将事件分发给相应的事件监听者执行。事件执行的方式通常分为**立即执行、延后执行、定期执行**几种。
 
 ![image-20221025152801874](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221025152801874.png)
+
+在 Netty 中 EventLoop 可以理解为 Reactor 线程模型的事件处理引擎，每个 EventLoop 线程都维护一个 Selector 选择器和任务队列 taskQueue。它主要负责处理 I/O 事件、普通任务和定时任务。
+
+### 2.1 事件处理机制
+
+![image-20221025180852013](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-10/image-20221025180852013.png)
+
+结合 Netty 的整体架构，来看下 EventLoop 的事件流转图，以便更好地理解 Netty EventLoop 的设计原理。NioEventLoop 的事件处理机制采用的是**无锁串行化的设计思路**。
+
+- **BossEventLoopGroup** 和 **WorkerEventLoopGroup** 包含一个或者多个 NioEventLoop。BossEventLoopGroup 负责监听客户端的 Accept 事件，当事件触发时，将事件注册至 WorkerEventLoopGroup 中的一个 NioEventLoop 上。每新建一个 Channel， 只选择一个 NioEventLoop 与其绑定。所以说 Channel 生命周期的所有事件处理都是**线程独立**的，不同的 NioEventLoop 线程之间不会发生任何交集。
+- NioEventLoop 完成数据读取后，会调用绑定的 ChannelPipeline 进行事件传播，ChannelPipeline 也是**线程安全**的，数据会被传递到 ChannelPipeline 的第一个 ChannelHandler 中。数据处理完成后，将加工完成的数据再传递给下一个 ChannelHandler，整个过程是**串行化**执行，不会发生线程上下文切换的问题。
+
+NioEventLoop 无锁串行化的设计不仅使系统吞吐量达到最大化，而且降低了用户开发业务逻辑的难度，不需要花太多精力关心线程安全问题。虽然单线程执行避免了线程切换，但是它的缺陷就是**不能执行时间过长的 I/O 操作**，一旦某个 I/O 事件发生阻塞，那么后续的所有 I/O 事件都无法执行，甚至造成事件积压。在使用 Netty 进行程序开发时，我们**一定要对 ChannelHandler 的实现逻辑有充分的风险意识**。
+
+NioEventLoop 线程的可靠性至关重要，一旦 NioEventLoop 发生阻塞或者陷入空轮询，就会导致整个系统不可用。在 JDK 中， Epoll 的实现是存在漏洞的，即使 Selector 轮询的事件列表为空，NIO 线程一样可以被唤醒，导致 CPU 100% 占用。这就是臭名昭著的 JDK epoll 空轮询的 Bug。Netty 作为一个高性能、高可靠的网络框架，需要保证 I/O 线程的安全性。那么它是如何解决 JDK epoll 空轮询的 Bug 呢？实际上 Netty 并没有从根源上解决该问题，而是巧妙地规避了这个问题。
+
+我们抛开其他细枝末节，直接定位到事件轮询 select() 方法中的最后一部分代码，一起看下 Netty 是如何解决 epoll 空轮询的 Bug。
+
+```lua
+long time = System.nanoTime();
+if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
+    selectCnt = 1;
+} else if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
+        selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
+    selector = selectRebuildSelector(selectCnt);
+    selectCnt = 1;
+    break;
+}
+```
+
+`Netty` 提供了一种检测机制判断线程是否可能陷入空轮询，具体的实现方式如下：
+
+1. 每次执行 `Select` 操作之前记录当前时间 `currentTimeNanos`。
+2. `time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos`，如果事件轮询的持续时间大于等于 `timeoutMillis`，那么说明是正常的，否则表明阻塞时间并未达到预期，可能触发了空轮询的 Bug。
+3. `Netty` 引入了计数变量 `selectCnt`。在正常情况下，`selectCnt` 会重置，否则会对 `selectCnt` 自增计数。当 `selectCnt` 达到 `SELECTOR_AUTO_REBUILD_THRESHOLD`（默认512） 阈值时，会触发重建 `Selector` 对象。
+
+`Netty` 采用这种方法巧妙地规避了 `JDK Bug`。异常的 `Selector` 中所有的 `SelectionKey` 会重新注册到新建的 `Selector` 上，重建完成之后异常的 `Selector` 就可以废弃了。
+
+### 2.2 任务处理机制
+
+`NioEventLoop` 不仅负责处理 I/O 事件，还要兼顾执行任务队列中的任务。任务队列遵循 FIFO 规则，可以保证任务执行的公平性。`NioEventLoop` 处理的任务类型基本可以分为三类。
+
+1. **普通任务**：通过 `NioEventLoop` 的 `execute`() 方法向任务队列 `taskQueue` 中添加任务。例如 Netty 在写数据时会封装 `WriteAndFlushTask` 提交给 `taskQueue`。`taskQueue` 的实现类是多生产者单消费者队列 `MpscChunkedArrayQueue`，在多线程并发添加任务时，可以保证线程安全。
+2. **定时任务**：通过调用 `NioEventLoop` 的 `schedule`() 方法向定时任务队列 `scheduledTaskQueue` 添加一个定时任务，用于周期性执行该任务。例如，心跳消息发送等。定时任务队列 `scheduledTaskQueue` 采用优先队列 `PriorityQueue` 实现。
+3. **尾部队列**：`tailTasks` 相比于普通任务队列优先级较低，在每次执行完 `taskQueue` 中任务后会去获取尾部队列中任务执行。尾部任务并不常用，主要用于做一些收尾工作，例如统计事件循环的执行时间、监控信息上报等。
