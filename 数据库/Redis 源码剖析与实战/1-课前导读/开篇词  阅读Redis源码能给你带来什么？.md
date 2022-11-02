@@ -51,19 +51,19 @@ Redis 的稳定版包括 2、3、4、5，以及 2020 年发布的 6.0 版本，�
 ```c
 int sdsTest() {
 
-​    ...
+    ...
 
 }
 
-\#ifdef SDS_TEST_MAIN
+#ifdef SDS_TEST_MAIN
 
 int main(void) {
 
-​    return sdsTest();
+    return sdsTest();
 
 }
 
-\#endif
+#endif
 ```
 
 **第三，举一反三，学习计算机系统设计思想，实现职业能力进阶。**
