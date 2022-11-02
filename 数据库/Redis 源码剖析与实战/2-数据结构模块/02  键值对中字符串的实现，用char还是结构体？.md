@@ -323,3 +323,9 @@ struct __attribute__ ((__packed__)) sdshdr8
 
 
 字符串看起来简单，但通过今天这节课的学习，你可以看到实现字符串有很多需要精巧设计的地方。C 语言字符串的实现方法和 SDS 的联系与区别，也是 Redis 面试时经常会被问到的问题，所以我也希望你能通过今天这节课，掌握好它俩的区别。
+
+## 每课一问
+
+SDS 字符串在 Redis 内部模块实现中也被广泛使用，你能在 Redis server 和客户端的实现中，找到使用 SDS 字符串的地方么？
+
+> ![image-20221102190514695](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-11/image-20221102190514695.png)
