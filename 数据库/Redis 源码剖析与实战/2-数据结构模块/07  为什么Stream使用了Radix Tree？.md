@@ -198,15 +198,17 @@ rax *raxNew(void)
 
 rax 结构体的定义如下所示，其中包含了 Radix Tree 中的 key 个数、节点个数，以及指向头节点的指针，而 raxNew 函数会调用 raxNewNode 函数来创建头节点。
 
+```c
 typedef struct rax {
 
-​    raxNode *head;  //Radix Tree的头指针
+    raxNode *head;  //Radix Tree的头指针
 
-​    uint64_t numele;  //Radix Tree中key的个数
+    uint64_t numele;  //Radix Tree中key的个数
 
-​    uint64_t numnodes; //Radix Tree中raxNode的个数
+    uint64_t numnodes; //Radix Tree中raxNode的个数
 
 } rax;
+```
 
 - **raxNewNode 函数**
 
