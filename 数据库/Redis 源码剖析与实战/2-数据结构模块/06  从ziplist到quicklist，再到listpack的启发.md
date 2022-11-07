@@ -174,7 +174,7 @@ quicklist 的设计，其实是结合了链表和 ziplist 各自的优势。简�
 
 我们来看下 quicklist 的数据结构，这是在quicklist.h文件中定义的，而 quicklist 的具体实现是在quicklist.c文件中。
 
-首先，quicklist 元素的定义，也就是 quicklistNode。因为 quicklist 是一个链表，所以每个 quicklistNode 中，都包含了分别指向它前序和后序节点的**指针*****prev****和*****next**。同时，每个 quicklistNode 又是一个 ziplist，所以，在 quicklistNode 的结构体中，还有指向 ziplist 的**指针*****zl**。
+首先，quicklist 元素的定义，也就是 quicklistNode。因为 quicklist 是一个链表，所以每个 quicklistNode 中，都包含了分别指向它前序和后序节点的指针**prev**和**next**。同时，每个 quicklistNode 又是一个 ziplist，所以，在 quicklistNode 的结构体中，还有指向 ziplist 的指针**zl**。
 
 此外，quicklistNode 结构体中还定义了一些属性，比如 ziplist 的字节大小、包含的元素个数、编码格式、存储方式等。下面的代码显示了 quicklistNode 的结构体定义，你可以看下。
 
@@ -314,7 +314,7 @@ unsigned char *lpNew(void) {
 
 ### listpack 列表项编码方法
 
-我们先来看下 listpack 元素的编码类型。如果你看了 listpack.c 文件，你会发现该文件中有大量类似 LP_ENCODING__XX_BIT_INT 和 LP_ENCODING__XX_BIT_STR 的宏定义，如下所示：
+我们先来看下 listpack 元素的编码类型。如果你看了 listpack.c 文件，你会发现该文件中有大量类似 LP_ENCODING_XX_BIT_INT 和 LP_ENCODING_XX_BIT_STR 的宏定义，如下所示：
 
 ```c
 #define LP_ENCODING_7BIT_UINT 0
