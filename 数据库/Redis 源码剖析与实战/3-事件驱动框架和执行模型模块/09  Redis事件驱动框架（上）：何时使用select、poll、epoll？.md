@@ -386,10 +386,9 @@ while(1) {
 
 下面的代码展示了 epoll_event 结构体以及 epoll_data 联合体的定义，你可以看下。
 
-typ
 
 ```c
-edef union epoll_data
+typedef union epoll_data
 
 {
 
