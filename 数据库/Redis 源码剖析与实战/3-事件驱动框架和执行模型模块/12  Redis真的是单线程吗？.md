@@ -114,7 +114,7 @@ setsid(); //创建新的session
 ```c
 #include <stdio.h>
 
-\#include <unistd.h>
+#include <unistd.h>
 
  
 
@@ -278,11 +278,11 @@ static pthread_cond_t bio_step_cond[BIO_NUM_OPS];
 ```c
 #define BIO_CLOSE_FILE    0 /* Deferred close(2) syscall. */
 
-\#define BIO_AOF_FSYNC    1 /* Deferred AOF fsync. */
+#define BIO_AOF_FSYNC    1 /* Deferred AOF fsync. */
 
-\#define BIO_LAZY_FREE     2 /* Deferred objects freeing. */
+#define BIO_LAZY_FREE     2 /* Deferred objects freeing. */
 
-\#define BIO_NUM_OPS       3
+#define BIO_NUM_OPS       3
 ```
 
 其中，BIO_NUM_OPS 表示的是 Redis 后台任务的类型有三种。而 BIO_CLOSE_FILE、BIO_AOF_FSYNC 和 BIO_LAZY_FREE，它们分别表示三种后台任务的操作码，这些操作码可以用来标识不同的任务。

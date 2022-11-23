@@ -257,7 +257,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
 
         for (j = 0; j < numevents; j++) {
 
-             \#保存事件信息
+             #保存事件信息
 
         }
 
