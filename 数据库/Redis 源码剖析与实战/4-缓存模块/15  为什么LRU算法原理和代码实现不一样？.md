@@ -44,19 +44,16 @@
 
 实际上，这和 Redis 配置文件 redis.conf 中的两个配置参数有关：
 
-**maxmemory**，该配置项设定了 Redis server 可以使用的最大内存容量，一旦 server 使用的实际内存量超出该阈值时，server 就会根据 maxmemory-policy 配置项定义的策略，执行内存淘汰操作；
-
-**maxmemory-policy**，该配置项设定了 Redis server 的内存淘汰策略，主要包括近似 LRU 算法、LFU 算法、按 TTL 值淘汰和随机淘汰等几种算法。
+- **maxmemory**，该配置项设定了 Redis server 可以使用的最大内存容量，一旦 server 使用的实际内存量超出该阈值时，server 就会根据 maxmemory-policy 配置项定义的策略，执行内存淘汰操作；
+- **maxmemory-policy**，该配置项设定了 Redis server 的内存淘汰策略，主要包括近似 LRU 算法、LFU 算法、按 TTL 值淘汰和随机淘汰等几种算法。
 
 所以，一旦我们设定了 maxmemory 选项，并且将 maxmemory-policy 配置为 allkeys-lru 或是 volatile-lru 时，近似 LRU 算法就被启用了。这里，你需要注意的是，allkeys-lru 和 volatile-lru 都会使用近似 LRU 算法来淘汰数据，它们的区别在于：采用 allkeys-lru 策略淘汰数据时，它是在所有的键值对中筛选将被淘汰的数据；而采用 volatile-lru 策略淘汰数据时，它是在设置了过期时间的键值对中筛选将被淘汰的数据。
 
 好，了解了如何启用近似 LRU 算法后，我们就来具体学习下 Redis 是如何实现近似 LRU 算法的。这里，为了便于你理解，我把 Redis 对近似 LRU 算法的实现分成了三个部分。
 
-**全局 LRU 时钟值的计算**：这部分包括，Redis 源码为了实现近似 LRU 算法的效果，是如何计算全局 LRU 时钟值的，以用来判断数据访问的时效性；
-
-**键值对 LRU 时钟值的初始化与更新**：这部分包括，Redis 源码在哪些函数中对每个键值对对应的 LRU 时钟值，进行初始化与更新；
-
-**近似 LRU 算法的实际执行**：这部分包括，Redis 源码具体如何执行近似 LRU 算法，也就是何时触发数据淘汰，以及实际淘汰的机制是怎么实现的。
+- **全局 LRU 时钟值的计算**：这部分包括，Redis 源码为了实现近似 LRU 算法的效果，是如何计算全局 LRU 时钟值的，以用来判断数据访问的时效性；
+- **键值对 LRU 时钟值的初始化与更新**：这部分包括，Redis 源码在哪些函数中对每个键值对对应的 LRU 时钟值，进行初始化与更新；
+- **近似 LRU 算法的实际执行**：这部分包括，Redis 源码具体如何执行近似 LRU 算法，也就是何时触发数据淘汰，以及实际淘汰的机制是怎么实现的。
 
 那么下面，我们就先来看下全局 LRU 时钟值的计算。
 
@@ -68,24 +65,27 @@
 
 redisOjbect 结构体的定义是在server.h中，其中就包含了 lru 成员变量的定义，你可以看下。
 
+```c
 typedef struct redisObject {
 
-​    unsigned type:4;
+    unsigned type:4;
 
-​    unsigned encoding:4;
+    unsigned encoding:4;
 
-​    unsigned lru:LRU_BITS;  //记录LRU信息，宏定义LRU_BITS是24 bits
+    unsigned lru:LRU_BITS;  //记录LRU信息，宏定义LRU_BITS是24 bits
 
-​    int refcount;
+    int refcount;
 
-​    void *ptr;
+    void *ptr;
 
 } robj;
+```
 
 **那么，每个键值对的 LRU 时钟值具体是如何计算的呢？**其实，Redis server 使用了一个实例级别的全局 LRU 时钟，每个键值对的 LRU 时钟值会根据全局 LRU 时钟进行设置。
 
 这个全局 LRU 时钟保存在了 Redis 全局变量 server 的成员变量 **lruclock** 中。当 Redis server 启动后，调用 initServerConfig 函数初始化各项参数时，就会对这个全局 LRU 时钟 lruclock 进行设置。具体来说，initServerConfig 函数是调用 getLRUClock 函数，来设置 lruclock 的值，如下所示：
 
+```c
 void initServerConfig(void) {
 
 ...
@@ -97,6 +97,7 @@ atomicSet(server.lruclock,lruclock);//设置lruclock为刚计算的LRU时钟值
 ...
 
 }
+```
 
 所以，**全局 LRU 时钟值就是通过 getLRUClock 函数计算得到的**。
 
@@ -104,7 +105,7 @@ getLRUClock 函数是在evict.c文件中实现的，它会调用 mstime 函数�
 
 因为 LRU_CLOCK_RESOLUTION 的默认值是 1000，所以，LRU 时钟精度就是 1000 毫秒，也就是 **1 秒**。
 
-这样一来，你需要注意的就是，**如果一个数据前后两次访问的时间间隔小于 1 秒，那么这两次访问的时间戳就是一样的**。因为 LRU 时钟的精度就是 1 秒，它无法区分间隔小于 1 秒的不同时间戳。
+这样一来，你需要注意的就是，**如果一个数据前后两次访问的时间间隔小于 1 秒，那么这两次访问的时间戳就是一样的**。因为 **LRU 时钟的精度就是 1 秒，它无法区分间隔小于 1 秒的不同时间戳。**
 
 好了，了解了宏定义 LRU_CLOCK_RESOLUTION 的含义之后，我们再来看下 getLRUClock 函数中的计算。
 
@@ -114,17 +115,19 @@ getLRUClock 函数是在evict.c文件中实现的，它会调用 mstime 函数�
 
 以下代码就展示了刚才介绍到的宏定义，以及 getLRUClock 函数的执行逻辑，你可以看下。
 
-\#define LRU_BITS 24  
+```c
+#define LRU_BITS 24  
 
-\#define LRU_CLOCK_MAX ((1<<LRU_BITS)-1)  //LRU时钟的最大值
+#define LRU_CLOCK_MAX ((1<<LRU_BITS)-1)  //LRU时钟的最大值
 
-\#define LRU_CLOCK_RESOLUTION 1000 //以毫秒为单位的LRU时钟精度
+#define LRU_CLOCK_RESOLUTION 1000 //以毫秒为单位的LRU时钟精度
 
 unsigned int getLRUClock(void) {
 
-​    return (mstime()/LRU_CLOCK_RESOLUTION) & LRU_CLOCK_MAX;
+    return (mstime()/LRU_CLOCK_RESOLUTION) & LRU_CLOCK_MAX;
 
 }
+```
 
 所以现在，你就知道了在默认情况下，全局 LRU 时钟值是以 1 秒为精度来计算的 UNIX 时间戳，并且它是在 initServerConfig 函数中进行了初始化。那么接下来，你可能还会困惑的问题是：**在 Redis server 的运行过程中，全局 LRU 时钟值是如何更新的呢？**
 
@@ -134,6 +137,7 @@ serverCron 函数作为时间事件的回调函数，本身会按照一定的频
 
 这样，在 serverCron 函数中，全局 LRU 时钟值就会按照这个函数的执行频率，定期调用 getLRUClock 函数进行更新，如下所示：
 
+```c
 int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
 ...
@@ -145,6 +149,7 @@ atomicSet(server.lruclock,lruclock); //设置lruclock变量
 ...
 
 }
+```
 
 所以这样一来，每个键值对就可以从全局 LRU 时钟获取最新的访问时间戳了。
 
@@ -162,27 +167,29 @@ LRU_CLOCK 函数是在 evict.c 文件中实现的，它的作用就是返回当�
 
 以下代码展示了这部分的执行逻辑，你可以看下。
 
+```c
 robj *createObject(int type, void *ptr) {
 
-​    robj *o = zmalloc(sizeof(*o));
+    robj *o = zmalloc(sizeof(*o));
 
-​    ...
+    ...
 
-​    //如果缓存替换策略是LFU，那么将lru变量设置为LFU的计数值
+    //如果缓存替换策略是LFU，那么将lru变量设置为LFU的计数值
 
-​    if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
+    if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
 
-​        o->lru = (LFUGetTimeInMinutes()<<8) | LFU_INIT_VAL;
+        o->lru = (LFUGetTimeInMinutes()<<8) | LFU_INIT_VAL;
 
-​    } else {
+    } else {
 
-​        o->lru = LRU_CLOCK();   //否则，调用LRU_CLOCK函数获取LRU时钟值
+        o->lru = LRU_CLOCK();   //否则，调用LRU_CLOCK函数获取LRU时钟值
 
-​    }
+    }
 
-​    return o;
+    return o;
 
 }
+```
 
 那么到这里，又出现了一个新的问题：**一个键值对的 LRU 时钟值又是在什么时候被再次更新的呢？**
 
@@ -192,29 +199,31 @@ lookupKey 函数是在db.c文件中实现的，它会从全局哈希表中查找
 
 而当 maxmemory_policy 没有配置为 LFU 策略时，lookupKey 函数就会调用 LRU_CLOCK 函数，来获取当前的全局 LRU 时钟值，并将其赋值给键值对的 redisObject 结构体中的 lru 变量，如下所示：
 
+```c
 robj *lookupKey(redisDb *db, robj *key, int flags) {
 
-​    dictEntry *de = dictFind(db->dict,key->ptr); //查找键值对
+    dictEntry *de = dictFind(db->dict,key->ptr); //查找键值对
 
-​    if (de) {
+    if (de) {
 
-​        robj *val = dictGetVal(de); 获取键值对对应的redisObject结构体
+        robj *val = dictGetVal(de); 获取键值对对应的redisObject结构体
 
-​        ...
+        ...
 
-​        if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
+        if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
 
-​                updateLFU(val);  //如果使用了LFU策略，更新LFU计数值
+                updateLFU(val);  //如果使用了LFU策略，更新LFU计数值
 
-​        } else {
+        } else {
 
-​                val->lru = LRU_CLOCK();  //否则，调用LRU_CLOCK函数获取全局LRU时钟值
+                val->lru = LRU_CLOCK();  //否则，调用LRU_CLOCK函数获取全局LRU时钟值
 
-​        }
+        }
 
-​       ...
+       ...
 
 }}
+```
 
 这样一来，每个键值对一旦被访问，就能获得最新的访问时间戳了。不过现在，你可能要问了：这些访问时间戳最终是如何被用于近似 LRU 算法，来进行数据淘汰的呢？
 
@@ -224,9 +233,10 @@ robj *lookupKey(redisDb *db, robj *key, int flags) {
 
 现在我们已经知道，Redis 之所以实现近似 LRU 算法的目的，是为了减少内存资源和操作时间上的开销。那么在这里，我们其实可以从两个方面来了解近似 LRU 算法的执行过程，分别是：
 
-何时触发算法执行？
+1. 何时触发算法执行？
 
-算法具体如何执行？
+2. 算法具体如何执行？
+
 
 ### 何时触发算法执行？
 
@@ -240,35 +250,39 @@ freeMemoryIfNeeded 函数是被 freeMemoryIfNeededAndSafe 函数（在 evict.c �
 
 那么，processCommand 函数在执行的时候，实际上会根据两个条件来判断是否调用 freeMemoryIfNeededAndSafe 函数。
 
-**条件一：设置了 maxmemory 配置项为非 0 值。**
+- **条件一：设置了 maxmemory 配置项为非 0 值。**
 
-**条件二：Lua 脚本没有在超时运行。**
+- **条件二：Lua 脚本没有在超时运行。**
 
 如果这两个条件成立，那么 processCommand 函数就会调用 freeMemoryIfNeededAndSafe 函数，如下所示：
 
+```c
 ...
 
 if (server.maxmemory && !server.lua_timedout) {
 
-​        int out_of_memory = freeMemoryIfNeededAndSafe() == C_ERR;
+        int out_of_memory = freeMemoryIfNeededAndSafe() == C_ERR;
 
 ...
+```
 
 然后，freeMemoryIfNeededAndSafe 函数还会再次根据两个条件，来判断是否调用 freeMemoryIfNeeded 函数。
 
-**条件一：Lua 脚本在超时运行。**
+- **条件一：Lua 脚本在超时运行。**
 
-**条件二：Redis server 正在加载数据。**
+- **条件二：Redis server 正在加载数据。**
 
 也就是说，只有在这两个条件都不成立的情况下，freeMemoryIfNeeded 函数才会被调用。下面的代码展示了 freeMemoryIfNeededAndSafe 函数的执行逻辑，你可以看下。
 
+```c
 int freeMemoryIfNeededAndSafe(void) {
 
-​    if (server.lua_timedout || server.loading) return C_OK;
+    if (server.lua_timedout || server.loading) return C_OK;
 
-​    return freeMemoryIfNeeded();
+    return freeMemoryIfNeeded();
 
 }
+```
 
 这样，一旦 freeMemoryIfNeeded 函数被调用了，并且 maxmemory-policy 被设置为了 allkeys-lru 或 volatile-lru，那么近似 LRU 算法就开始被触发执行了。接下来，我们就来看下近似 LRU 算法具体是如何执行的，也就是来了解 freeMemoryIfNeeded 函数的主要执行流程。
 
@@ -282,22 +296,25 @@ int freeMemoryIfNeededAndSafe(void) {
 
 **如果当前内存使用量没有超过 maxmemory**，那么，getMaxmemoryState 函数会返回 C_OK，紧接着，freeMemoryIfNeeded 函数也会直接返回了。
 
+```c
 int freeMemoryIfNeeded(void) {
 
 ...
 
 if (getMaxmemoryState(&mem_reported,NULL,&mem_tofree,NULL) == C_OK)
 
-​        return C_OK;
+        return C_OK;
 
 ...
 
 }
+```
 
 这里，**你需要注意的是**，getMaxmemoryState 函数在评估当前内存使用情况的时候，如果发现已用内存超出了 maxmemory，它就会计算需要释放的内存量。这个释放的内存大小等于已使用的内存量减去 maxmemory。不过，已使用的内存量并不包括用于主从复制的复制缓冲区大小，这是 getMaxmemoryState 函数，通过调用 freeMemoryGetNotCountedMemory 函数来计算的。
 
 我把 getMaxmemoryState 函数的基本执行逻辑代码放在这里，你可以看下。
 
+```c
 int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level) {
 
 ...
@@ -323,24 +340,27 @@ mem_tofree = mem_used - server.maxmemory;
 ...
 
 }
+```
 
 **而如果当前 server 使用的内存量，的确已经超出 maxmemory 的上限了**，那么 freeMemoryIfNeeded 函数就会执行一个 while 循环，来淘汰数据释放内存。
 
 其实，为了淘汰数据，Redis 定义了一个数组 EvictionPoolLRU，用来保存待淘汰的候选键值对。这个数组的元素类型是 evictionPoolEntry 结构体，该结构体保存了待淘汰键值对的空闲时间 idle、对应的 key 等信息。以下代码展示了 EvictionPoolLRU 数组和 evictionPoolEntry 结构体，它们都是在 evict.c 文件中定义的。
 
+```c
 static struct evictionPoolEntry *EvictionPoolLRU;
 
 struct evictionPoolEntry {
 
-​    unsigned long long idle;    //待淘汰的键值对的空闲时间
+    unsigned long long idle;    //待淘汰的键值对的空闲时间
 
-​    sds key;                    //待淘汰的键值对的key
+    sds key;                    //待淘汰的键值对的key
 
-​    sds cached;                 //缓存的SDS对象
+    sds cached;                 //缓存的SDS对象
 
-​    int dbid;                   //待淘汰键值对的key所在的数据库ID
+    int dbid;                   //待淘汰键值对的key所在的数据库ID
 
 };
+```
 
 这样，Redis server 在执行 initSever 函数进行初始化时，会调用 evictionPoolAlloc 函数（在 evict.c 文件中）为 EvictionPoolLRU 数组分配内存空间，该数组的大小由宏定义 EVPOOL_SIZE（在 evict.c 文件中）决定，默认是 16 个元素，也就是可以保存 16 个待淘汰的候选键值对。
 
@@ -350,67 +370,75 @@ struct evictionPoolEntry {
 
 首先，freeMemoryIfNeeded 函数会调用 **evictionPoolPopulate 函数**（在 evict.c 文件中），而 evictionPoolPopulate 函数会先调用 dictGetSomeKeys 函数（在 dict.c 文件中），从待采样的哈希表中随机获取一定数量的 key。不过，这里还有两个地方你需要注意下。
 
-**第一点**，dictGetSomeKeys 函数采样的哈希表，是由 maxmemory_policy 配置项来决定的。如果 maxmemory_policy 配置的是 allkeys_lru，那么待采样哈希表就是 Redis server 的全局哈希表，也就是在所有键值对中进行采样；否则，待采样哈希表就是保存着设置了过期时间的 key 的哈希表。
+- **第一点**，dictGetSomeKeys 函数采样的哈希表，是由 maxmemory_policy 配置项来决定的。如果 maxmemory_policy 配置的是 allkeys_lru，那么待采样哈希表就是 Redis server 的全局哈希表，也就是在所有键值对中进行采样；否则，待采样哈希表就是保存着设置了过期时间的 key 的哈希表。
 
 以下代码是 freeMemoryIfNeeded 函数中对 evictionPoolPopulate 函数的调用过程，你可以看下。
 
+```c
 for (i = 0; i < server.dbnum; i++) {
 
-​       db = server.db+i;   //对Redis server上的每一个数据库都执行
+       db = server.db+i;   //对Redis server上的每一个数据库都执行
 
-​       //根据淘汰策略，决定使用全局哈希表还是设置了过期时间的key的哈希表
+       //根据淘汰策略，决定使用全局哈希表还是设置了过期时间的key的哈希表
 
-​       dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->dict : db->expires;
+       dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->dict : db->expires;
 
-​       if ((keys = dictSize(dict)) != 0) {
+       if ((keys = dictSize(dict)) != 0) {
 
-​           //将选择的哈希表dict传入evictionPoolPopulate函数，同时将全局哈希表也传给evictionPoolPopulate函数
+           //将选择的哈希表dict传入evictionPoolPopulate函数，同时将全局哈希表也传给evictionPoolPopulate函数
 
-​           evictionPoolPopulate(i, dict, db->dict, pool);
+           evictionPoolPopulate(i, dict, db->dict, pool);
 
-​           total_keys += keys;
+           total_keys += keys;
 
-​        }
+        }
 
  }
+```
 
-**第二点**，dictGetSomeKeys 函数采样的 key 的数量，是由 redis.conf 中的配置项 maxmemory-samples 决定的，该配置项的默认值是 5。下面代码就展示了 evictionPoolPopulate 函数对 dictGetSomeKeys 函数的调用：
+- **第二点**，dictGetSomeKeys 函数采样的 key 的数量，是由 redis.conf 中的配置项 maxmemory-samples 决定的，该配置项的默认值是 5。下面代码就展示了 evictionPoolPopulate 函数对 dictGetSomeKeys 函数的调用：
 
+
+```c
 void evictionPoolPopulate(int dbid, dict *sampledict, dict *keydict, struct evictionPoolEntry *pool) {
 
-​    ...
+    ...
 
-​    dictEntry *samples[server.maxmemory_samples];  //采样后的集合，大小为maxmemory_samples
+    dictEntry *samples[server.maxmemory_samples];  //采样后的集合，大小为maxmemory_samples
 
-​    //将待采样的哈希表sampledict、采样后的集合samples、以及采样数量maxmemory_samples，作为参数传给dictGetSomeKeys
+    //将待采样的哈希表sampledict、采样后的集合samples、以及采样数量maxmemory_samples，作为参数传给dictGetSomeKeys
 
-​    count = dictGetSomeKeys(sampledict,samples,server.maxmemory_samples);
+    count = dictGetSomeKeys(sampledict,samples,server.maxmemory_samples);
 
-​    ...
+    ...
 
 }
+```
 
 如此一来，dictGetSomeKeys 函数就能返回采样的键值对集合了。然后，evictionPoolPopulate 函数会根据实际采样到的键值对数量 count，执行一个循环。
 
 在这个循环流程中，evictionPoolPopulate 函数会调用 estimateObjectIdleTime 函数，来计算在采样集合中的每一个键值对的空闲时间，如下所示：
 
+```c
 for (j = 0; j < count; j++) {
 
 ...
 
 if (server.maxmemory_policy & MAXMEMORY_FLAG_LRU) {
 
-​            idle = estimateObjectIdleTime(o);
+            idle = estimateObjectIdleTime(o);
 
 }
 
 ...
+```
 
 紧接着，evictionPoolPopulate 函数会遍历待淘汰的候选键值对集合，也就是 EvictionPoolLRU 数组。在遍历过程中，它会尝试把采样的每一个键值对插入 EvictionPoolLRU 数组，这主要取决于以下两个条件之一：
 
-一是，它能在数组中找到一个尚未插入键值对的空位；
+- 一是，它能在数组中找到一个尚未插入键值对的空位；
 
-二是，它能在数组中找到一个空闲时间小于采样键值对空闲时间的键值对。
+- 二是，它能在数组中找到一个空闲时间小于采样键值对空闲时间的键值对。
+
 
 这两个条件有一个成立的话，evictionPoolPopulate 函数就可以把采样键值对插入 EvictionPoolLRU 数组。等所有采样键值对都处理完后，evictionPoolPopulate 函数就完成对待淘汰候选键值对集合的更新了。
 
@@ -422,6 +450,7 @@ if (server.maxmemory_policy & MAXMEMORY_FLAG_LRU) {
 
 这个过程的基本执行逻辑如下所示：
 
+```c
 for (k = EVPOOL_SIZE-1; k >= 0; k--) { //从数组最后一个key开始查找
 
    if (pool[k].key == NULL) continue; //当前key为空值，则查找下一个key
@@ -430,39 +459,42 @@ for (k = EVPOOL_SIZE-1; k >= 0; k--) { //从数组最后一个key开始查找
 
    ... //从全局哈希表或是expire哈希表中，获取当前key对应的键值对；并将当前key从EvictionPoolLRU数组删除
 
-​    //如果当前key对应的键值对不为空，选择当前key为被淘汰的key
+    //如果当前key对应的键值对不为空，选择当前key为被淘汰的key
 
-​    if (de) {
+    if (de) {
 
-​      bestkey = dictGetKey(de);
+      bestkey = dictGetKey(de);
 
-​      break;
+      break;
 
-​     } else {} //否则，继续查找下个key
+     } else {} //否则，继续查找下个key
 
 }
+```
 
 最后，一旦选到了被淘汰的 key，freeMemoryIfNeeded 函数就会根据 Redis server 的惰性删除配置，来执行同步删除或异步删除，如下所示：
 
+```c
 if (bestkey) {
 
-​            db = server.db+bestdbid;
+            db = server.db+bestdbid;
 
-​            robj *keyobj = createStringObject(bestkey,sdslen(bestkey));        //将删除key的信息传递给从库和AOF文件
+            robj *keyobj = createStringObject(bestkey,sdslen(bestkey));        //将删除key的信息传递给从库和AOF文件
 
-​            propagateExpire(db,keyobj,server.lazyfree_lazy_eviction);
+            propagateExpire(db,keyobj,server.lazyfree_lazy_eviction);
 
-​            //如果配置了惰性删除，则进行异步删除
+            //如果配置了惰性删除，则进行异步删除
 
-​            if (server.lazyfree_lazy_eviction)
+            if (server.lazyfree_lazy_eviction)
 
-​                dbAsyncDelete(db,keyobj);
+                dbAsyncDelete(db,keyobj);
 
-​            else  //否则进行同步删除
+            else  //否则进行同步删除
 
-​                dbSyncDelete(db,keyobj);
+                dbSyncDelete(db,keyobj);
 
 }
+```
 
 好了，到这里，freeMemoryIfNeeded 函数就淘汰了一个 key。而如果此时，释放的内存空间还不够，也就是说没有达到我前面介绍的待释放空间，那么 freeMemoryIfNeeded 函数还会**重复执行**前面所说的更新待淘汰候选键值对集合、选择最终淘汰 key 的过程，直到满足待释放空间的大小要求。
 
@@ -490,22 +522,24 @@ if (bestkey) {
 
 那么你知道，为什么键值对的 LRU 时钟值，不是直接通过调用 getLRUClock 函数来获取的呢？
 
+```c
 unsigned int LRU_CLOCK(void) {
 
-​    unsigned int lruclock;
+    unsigned int lruclock;
 
-​    if (1000/server.hz <= LRU_CLOCK_RESOLUTION) {
+    if (1000/server.hz <= LRU_CLOCK_RESOLUTION) {
 
-​        atomicGet(server.lruclock,lruclock);
+        atomicGet(server.lruclock,lruclock);
 
-​    } else {
+    } else {
 
-​        lruclock = getLRUClock();
+        lruclock = getLRUClock();
 
-​    }
+    }
 
-​    return lruclock;
+    return lruclock;
 
 }
+```
 
 > ![image-20221107121447589](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-11/image-20221107121447589.png)

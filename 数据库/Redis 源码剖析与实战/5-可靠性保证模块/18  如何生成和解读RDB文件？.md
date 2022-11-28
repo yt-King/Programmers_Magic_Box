@@ -16,10 +16,11 @@ Redis 源码中用来创建 RDB 文件的函数有三个，它们都是在rdb.c�
 
 **rdbSaveBackground 函数**
 
-这是 Redis server 使用后台子进程方式，在本地磁盘创建 RDB 文件的入口函数。它对应了 Redis 的 bgsave 命令，会在 bgsave 命令的实现函数 bgsaveCommand（在 rdb.c 文件中）中被调用。这个函数会调用 fork 创建一个子进程，让子进程调用 rdbSave 函数来继续创建 RDB 文件，而父进程，也就是主线程本身可以继续处理客户端请求。
+这是 Redis server 使用后台子进程方式，在本地dvvfvccvcvfczvczss磁盘创建 RDB 文件的入口函数。它对应了 Redis 的 bgsave 命令，会在 bgsave 命令的实现函数 bgsaveCommand（在 rdb.c 文件中）中被调用。这个函数会调用 fork 创建一个子进程，让子进程调用 rdbSave 函数来继续创建 RDB 文件，而父进程，也就是主线程本身可以继续处理客户端请求。
 
 下面的代码展示了 rdbSaveBackground 函数创建子进程的过程，你可以看下。我在第 12 讲中也向你介绍过 fork 的使用，你可以再回顾下。
 
+```c
 int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
 
 ...
@@ -41,6 +42,7 @@ if ((childpid = fork()) == 0) {  //子进程的代码执行分支
 }
 
 }
+```
 
 **rdbSaveToSlavesSockets 函数**
 
@@ -54,6 +56,7 @@ if ((childpid = fork()) == 0) {  //子进程的代码执行分支
 
 以下代码也展示了 rdbSaveRioWithEOFMark 函数的基本执行逻辑。你可以看到，它除了写入前后标识字符串之外，还是会调用 rdbSaveRio 函数实际生成 RDB 内容。
 
+```c
 int rdbSaveRioWithEOFMark(rio *rdb, int *error, rdbSaveInfo *rsi) {
 
 ...
@@ -73,6 +76,7 @@ if (rioWrite(rdb,eofmark,RDB_EOF_MARK_SIZE) == 0) goto werr; //再次写入40字
 ...
 
 }
+```
 
 好了，了解了 RDB 文件创建的三个入口函数后，我们也看到了，RDB 文件创建的三个时机，分别是 save 命令执行、bgsave 命令执行以及主从复制。那么，**除了这三个时机外，在 Redis 源码中，还有哪些地方会触发 RDB 文件创建呢？**
 
