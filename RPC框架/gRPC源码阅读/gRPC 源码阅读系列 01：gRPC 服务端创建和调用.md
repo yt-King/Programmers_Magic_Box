@@ -25,7 +25,7 @@ gRPC 是一个高性能、开源和通用的 RPC 框架，面向服务端和移�
 
 #### 1.3.1 gRPC 概览
 
-gRPC 是由 Google 开发并开源的一种语言中立的 RPC 框架，当前支持 C、Java 和 Go 语言，其中 C 版本支持 C、C++、Node.js、C# 等。当前 Java 版本最新 Release 版为 1.5.0。
+gRPC 是由 Google 开发并开源的一种语言 中立的 RPC 框架，当前支持 C、Java 和 Go 语言，其中 C 版本支持 C、C++、Node.js、C# 等。当前 Java 版本最新 Release 版为 1.5.0。
 
 Git 地址如下：[grpc-java](https://github.com/grpc/grpc-java)
 
