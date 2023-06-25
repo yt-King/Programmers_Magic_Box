@@ -199,7 +199,7 @@ public Connection getConnection() {
 >
 >我们还要注意`Entry`， 它的`key`是`ThreadLocal<?> k` ，继承自`WeakReference`， 也就是我们常说的弱引用类型。
 
-本质上来讲, ThreadLocalMap它就是一个Map, 但是这个ThreadLocalMap与我们平时见到的Map有点不一样
+本质上来讲, ThreadLocalMap它就是一个Map（**在线程对象内部搞个 map，把 ThreadLocal 对象自身作为 key，把它的值作为 map 的值**）, 但是这个ThreadLocalMap与我们平时见到的Map有点不一样
 
 - 它没有实现Map接口
 - 它没有public的方法, 最多有一个default的构造方法, 因为这个ThreadLocalMap的方法仅仅在ThreadLocal类中调用, 属于静态内部类
@@ -695,6 +695,8 @@ public class ThreadLocalService {
 如下图所示：
 
 <img src="https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-9/image-20220930170413945.png" alt="image-20220930170413945" style="zoom:67%;" />
+
+> 还有一个原因：将 ThreadLocal 看做一个 map ，然后每个线程是  key，这样每个线程去调用 `ThreadLocal.get` 的时候，将自身作为 key 去 map 找，这样就能获取各自的值了。但是这样 ThreadLocal 就变成共享变量了，多个线程竞争 ThreadLocal ，那就得保证 ThreadLocal 的并发安全，就需要进行加锁操作，得不偿失。
 
 ## **父子线程如何共享数据？**
 
