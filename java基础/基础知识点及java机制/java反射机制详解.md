@@ -1,4 +1,4 @@
-# java反射机制详解
+## java反射机制详解
 
 ## 反射基础
 
@@ -127,7 +127,7 @@ public class User {
 
 ### Constructor类及其用法
 
-> Constructor类存在于反射包(java.lang.reflect)中，反映的是Class 对象所表示的类的构造方法。·获取Constructor对象是通过Class类中的方法获取的，Class类与Constructor相关的主要方法如下：
+> Constructor类存在于反射包(java.lang.reflect)中，反映的是Class 对象所表示的类的构造方法。获取Constructor对象是通过Class类中的方法获取的，Class类与Constructor相关的主要方法如下：
 
 
 
@@ -493,7 +493,7 @@ drawCircle
 count:100
 ```
 
-著作权归https://pdai.tech所有。 链接：https://pdai.tech/md/java/basic/java-basic-x-reflection.html
+
 
 | 方法返回值 | 方法名称                           | 方法说明                                                     |
 | ---------- | ---------------------------------- | ------------------------------------------------------------ |
@@ -509,3 +509,7 @@ count:100
 ## 反射机制执行的流程
 
 ![image-20220720095328448](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2022-7/202207200953638.png)
+
+## 扩展阅读
+
+[Java 反射真的很慢吗？](https://juejin.cn/post/6844904098207105038)
