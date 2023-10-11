@@ -119,7 +119,7 @@ Exporter将监控数据采集的端点通过HTTP服务的形式暴露给Promethe
 
 由于Prometheus数据采集基于Pull模型进行设计，因此在网络环境的配置上必须要让Prometheus Server能够直接与Exporter进行通信。 当这种网络需求无法直接满足时，就可以利用PushGateway来进行中转。可以通过PushGateway将内部网络的监控数据主动Push到Gateway当中。而Prometheus Server则可以采用同样Pull的方式从PushGateway中获取到监控数据。
 
-## 6.实际使用
+## 6.使用案例
 
 以java为例，如何结合prometheus进行相关数据的上报与页面展示，数据源与prometheus交互的方式有两种，第一种是像上文的node-exporter一样开放数据端口让prometheus定时拉取；另一种是主动将数据推送到PushGateway，prometheus定时拉取PushGateway的数据。本次的例子采用第二种方式。
 
@@ -242,4 +242,6 @@ success_count{client="count",instance="",job="method_count",method_name="/item/u
 
 ![image-20230804143356784](https://typora-imagehost-1308499275.cos.ap-shanghai.myqcloud.com/2023-6/image-20230804143356784.png)
 
-通过rate函数可以看到单位时间内的变化情况，[1m]表示的就是这1分钟内的平均变化趋势，由于数据上报是每十秒一次，所以最后的结果要乘上10才是正确的数据。
+通过rate函数可以看到单位时间内的变化情况，[1m]表示的就是这1分钟内的平均变化趋势。
+
+## 7.实际使用
